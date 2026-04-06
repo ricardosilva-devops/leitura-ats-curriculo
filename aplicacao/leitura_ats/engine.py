@@ -316,13 +316,25 @@ class ATSEngine:
         keywords_critical = []
         seen = set()
         
+        # Termos que precisam de match exato (muito curtos ou ambíguos)
+        exact_match_terms = {'go', 'sh', 'py', 'ha', 'dr', 'ad', 'dd', 'tf'}
+        
+        def term_exists(term: str) -> bool:
+            """Verifica se termo existe no texto, respeitando boundaries."""
+            if term in exact_match_terms or len(term) <= 2:
+                # Para termos curtos, exigir boundary de palavra
+                pattern = r'\b' + re.escape(term) + r'\b'
+                return bool(re.search(pattern, text_lower))
+            return term in text_lower
+        
         # Buscar em todos os sinônimos
         for canonical, synonyms in TECH_SYNONYMS.items():
             all_terms = [canonical] + synonyms
             
             for term in all_terms:
-                if term in text_lower and term not in seen:
+                if term_exists(term) and term not in seen:
                     seen.add(term)
+                    seen.add(canonical)  # Marcar canônico também
                     is_critical = canonical in CRITICAL_KEYWORDS or term in CRITICAL_KEYWORDS
                     
                     keywords_found.append(KeywordMatch(
@@ -338,7 +350,7 @@ class ATSEngine:
         
         # Buscar keywords críticas diretamente
         for kw in CRITICAL_KEYWORDS:
-            if kw in text_lower and kw not in seen:
+            if kw not in seen and term_exists(kw):
                 seen.add(kw)
                 keywords_found.append(KeywordMatch(
                     keyword=kw,
@@ -364,8 +376,18 @@ class ATSEngine:
         
         essential_sections = ["dados_pessoais", "experiencia", "formacao", "habilidades"]
         
+        # Verificar se há dados de contato (email/telefone) mesmo sem título "Dados Pessoais"
+        has_contact_data = bool(
+            re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text_lower) or  # email
+            re.search(r'\(?[1-9]{2}\)?\s?(?:9\s?)?[0-9]{4}[-\s]?[0-9]{4}', text_lower)  # telefone
+        )
+        
         for section_key, patterns in SECTION_KEYWORDS.items():
             detected = any(pattern in text_lower for pattern in patterns)
+            
+            # Para dados_pessoais, considerar presente se houver email/telefone
+            if section_key == "dados_pessoais" and not detected and has_contact_data:
+                detected = True
             
             section_names = {
                 "dados_pessoais": "Dados Pessoais",
@@ -673,7 +695,7 @@ class ATSEngine:
                 end = start + next_section.start() if next_section else min(start + 1000, len(text))
                 
                 summary = text[start:end].strip()
-                summary = re.sub(r'\s+', ' ', summary)[:600]
+                summary = re.sub(r'\s+', ' ', summary)[:1500]  # Aumentado para 1500 caracteres
                 break
         
         # Encontrar objetivo

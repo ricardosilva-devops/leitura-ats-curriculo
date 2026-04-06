@@ -10,32 +10,68 @@ para identificar seções em currículos.
 # =============================================================================
 
 CRITICAL_KEYWORDS = {
-    # Tecnologias Core
-    "linux", "aws", "docker", "kubernetes", "terraform", "ansible",
-    "python", "bash", "shell", "nginx", "postgresql", "mysql",
-    "zabbix", "prometheus", "grafana", "jenkins", "gitlab",
-    "azure", "gcp", "google cloud", "ec2", "s3", "vpc",
+    # Sistemas Operacionais
+    "linux", "ubuntu", "centos", "debian", "rhel", "red hat",
+    "windows server", "unix", "freebsd",
     
-    # Ferramentas importantes
-    "git", "ci/cd", "pipeline", "devops", "sre", "monitoring",
-    "elasticsearch", "redis", "mongodb", "kafka",
+    # Cloud
+    "aws", "azure", "gcp", "google cloud", "ec2", "s3", "vpc",
+    "lambda", "cloudformation", "ecs", "eks", "rds", "dynamodb",
+    "cloudwatch", "iam", "route53", "cloudfront",
     
-    # Conceitos críticos
-    "troubleshooting", "automação", "automation", "scripting",
-    "backup", "disaster recovery", "high availability",
+    # Containers e Orquestração
+    "docker", "kubernetes", "k8s", "openshift", "rancher",
+    "helm", "containerd", "podman", "docker compose",
     
-    # Certificações
-    "certificação", "certificado", "aws certified", "cka", "ckad",
-    "lpic", "rhcsa", "rhce",
+    # IaC e Automação
+    "terraform", "ansible", "puppet", "chef", "saltstack",
+    "cloudformation", "pulumi", "vagrant",
     
-    # Níveis (importante para match)
-    "sênior", "senior", "pleno", "júnior", "junior",
+    # CI/CD
+    "jenkins", "gitlab", "github actions", "bitbucket pipelines",
+    "circleci", "travis", "argocd", "spinnaker",
     
-    # Idiomas (crítico para algumas vagas)
-    "inglês", "ingles", "english", "fluente", "avançado",
+    # Monitoramento e Observabilidade
+    "zabbix", "prometheus", "grafana", "datadog", "new relic",
+    "nagios", "elk", "elasticsearch", "logstash", "kibana",
+    "splunk", "dynatrace", "jaeger", "opentelemetry",
     
-    # Modalidade
-    "remoto", "presencial", "híbrido", "home office", "remote",
+    # Redes e Segurança
+    "tcp/ip", "dns", "vpn", "firewall", "nginx", "apache",
+    "haproxy", "load balancer", "ssl", "tls", "iptables",
+    "waf", "cloudflare",
+    
+    # Banco de Dados
+    "postgresql", "mysql", "mariadb", "mongodb", "redis",
+    "oracle", "sql server", "cassandra", "dynamodb",
+    
+    # Linguagens e Scripting
+    "python", "bash", "shell", "powershell", "go", "golang",
+    "ruby", "perl", "groovy",
+    
+    # Versionamento e Colaboração
+    "git", "github", "gitlab", "bitbucket", "svn",
+    
+    # Metodologias e Práticas
+    "devops", "sre", "gitops", "infrastructure as code",
+    "ci/cd", "pipeline", "agile", "scrum", "kanban",
+    
+    # Virtualização
+    "vmware", "vsphere", "hyper-v", "kvm", "proxmox", "xen",
+    
+    # Storage e Backup
+    "storage", "san", "nas", "nfs", "ceph", "minio",
+    "backup", "veeam", "bacula", "rsync",
+    
+    # Mensageria
+    "kafka", "rabbitmq", "sqs", "sns", "activemq",
+    
+    # Ferramentas de Desenvolvimento
+    "api", "rest", "graphql", "microservices", "serverless",
+    
+    # Certificações (abreviações técnicas)
+    "aws certified", "cka", "ckad", "lpic", "rhcsa", "rhce",
+    "azure certified", "gcp certified",
 }
 
 
@@ -45,43 +81,43 @@ CRITICAL_KEYWORDS = {
 
 SECTION_KEYWORDS = {
     "dados_pessoais": [
-        "dados pessoais", "informações pessoais", "contato",
-        "personal info", "contact", "sobre mim", "about me"
+        "dados pessoais", "informações pessoais", "informacoes pessoais",
+        "personal info", "contact info", "contato:"
     ],
     "objetivo": [
-        "objetivo", "objetivo profissional", "objective",
-        "career objective", "meta profissional"
+        "objetivo profissional", "objetivo:", "career objective",
+        "meta profissional"
     ],
     "resumo": [
-        "resumo", "resumo profissional", "perfil", "profile",
-        "summary", "professional summary", "sobre",
-        "apresentação", "introduction"
+        "resumo profissional", "perfil profissional", "resumo:",
+        "summary", "professional summary", "apresentação profissional",
+        "sobre mim", "perfil:"
     ],
     "experiencia": [
-        "experiência", "experiência profissional", "experience",
-        "work experience", "histórico profissional", "carreira",
-        "employment history", "work history"
+        "experiência profissional", "experiencia profissional",
+        "experiências", "work experience", "histórico profissional",
+        "employment history", "work history", "experiência:"
     ],
     "formacao": [
-        "formação", "formação acadêmica", "educação", "education",
-        "academic background", "escolaridade", "graduação",
-        "pós-graduação", "mestrado", "doutorado"
+        "formação acadêmica", "formacao academica", "educação",
+        "education", "academic background", "escolaridade",
+        "graduação", "pós-graduação", "formação:"
     ],
     "habilidades": [
-        "habilidades", "habilidades técnicas", "competências",
-        "skills", "technical skills", "conhecimentos",
-        "hard skills", "soft skills", "tecnologias"
+        "habilidades técnicas", "habilidades:", "competências técnicas",
+        "technical skills", "hard skills", "conhecimentos técnicos",
+        "tecnologias:", "skills:"
     ],
     "idiomas": [
-        "idiomas", "línguas", "languages", "proficiência linguística"
+        "idiomas:", "línguas:", "languages:", "proficiência linguística"
     ],
     "certificacoes": [
-        "certificações", "certificados", "cursos", "certifications",
-        "training", "treinamentos", "qualificações"
+        "certificações:", "certificados:", "certifications:",
+        "cursos e certificações", "qualificações:"
     ],
     "projetos": [
-        "projetos", "portfólio", "portfolio", "projects",
-        "trabalhos", "cases", "realizações"
+        "projetos:", "portfólio:", "portfolio:", "projects:",
+        "principais projetos", "realizações:"
     ],
 }
 
