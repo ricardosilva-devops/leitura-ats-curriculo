@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv
+env
+ENV
+.venv
+.pytest_cache
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Temporários
+*.pdf
+temp_*
+.tmp*
+
+# Docs
+*.md
+*.docx
+documentacao/
+diagramas/
+
+# Testes
+testes/
+*_test.py
+test_*
+
+# Cache
+.cache
+nltk_data/
+
+# Node (se houver)
+node_modules/
+
+# Outros
+*.tar
+*.tar.gz
+Thumbs.db
+.DS_Store

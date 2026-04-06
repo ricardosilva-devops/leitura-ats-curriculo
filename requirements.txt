@@ -1,0 +1,17 @@
+# Flask Web Framework
+flask>=3.0.0
+
+# Gunicorn WSGI Server
+gunicorn>=21.0.0
+
+# PDF Extraction
+pymupdf>=1.23.0
+
+# NLP - Natural Language Processing
+nltk>=3.8.0
+
+# Text normalization
+unidecode>=1.3.0
+
+# Optional: sklearn for TF-IDF (heavier but more accurate)
+# scikit-learn>=1.3.0

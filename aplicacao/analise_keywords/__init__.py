@@ -1,0 +1,4 @@
+from .keywords import CRITICAL_KEYWORDS, SECTION_KEYWORDS
+from .synonyms import TECH_SYNONYMS
+
+__all__ = ['CRITICAL_KEYWORDS', 'SECTION_KEYWORDS', 'TECH_SYNONYMS']

@@ -1,0 +1,145 @@
+# =============================================================================
+# KUBERNETES SERVICE - Leitura ATS
+# =============================================================================
+#
+# Service do tipo LoadBalancer para expor a aplicação externamente via AWS ELB.
+# 
+# Configurações implementadas:
+# - LoadBalancer com anotações AWS específicas
+# - Session affinity para manter usuários no mesmo pod
+# - Health checks customizados
+# - Integração com AWS Certificate Manager para HTTPS
+#
+# =============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: leitura-ats-service
+  namespace: default
+  labels:
+    app: leitura-ats
+    component: backend
+  annotations:
+    # AWS Load Balancer Controller annotations
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    
+    # Health check configuration
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "HTTP"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/health"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "30"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "5"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+    
+    # Connection settings
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "60"
+    
+    # Logging
+    service.beta.kubernetes.io/aws-load-balancer-access-log-enabled: "true"
+    
+    # Tags do Load Balancer
+    service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "Project=leitura-ats,ManagedBy=kubernetes,Component=loadbalancer"
+    
+spec:
+  type: LoadBalancer
+  
+  # Session affinity para manter usuário no mesmo pod (útil para upload de arquivos)
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600  # 1 hora
+  
+  # Seletor de pods
+  selector:
+    app: leitura-ats
+  
+  # Portas expostas
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 5000
+      # Porta do NodePort (alocada automaticamente se não especificada)
+      # nodePort: 30080
+
+---
+# =============================================================================
+# INGRESS (OPCIONAL) - Para uso com NGINX Ingress Controller
+# =============================================================================
+#
+# Alternativa ao LoadBalancer direto, oferece mais recursos:
+# - Path-based routing
+# - SSL/TLS termination
+# - Rate limiting
+# - Authentication
+#
+# Requer NGINX Ingress Controller instalado no cluster
+#
+# =============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: leitura-ats-ingress
+  namespace: default
+  labels:
+    app: leitura-ats
+  annotations:
+    # NGINX Ingress Controller
+    kubernetes.io/ingress.class: "nginx"
+    
+    # SSL Redirect
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    
+    # Rate Limiting (proteção contra abuso)
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+    
+    # Body size (16MB para upload de PDFs)
+    nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+    
+    # Timeouts
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    
+    # Certificate Manager (para SSL automático com Let's Encrypt)
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    
+spec:
+  # TLS Configuration
+  tls:
+    - hosts:
+        - leitura-ats.example.com
+      secretName: leitura-ats-tls
+  
+  # Routing rules
+  rules:
+    - host: leitura-ats.example.com
+      http:
+        paths:
+          # Path principal da aplicação
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: leitura-ats-service
+                port:
+                  number: 80
+          
+          # Health check endpoint
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: leitura-ats-service
+                port:
+                  number: 80

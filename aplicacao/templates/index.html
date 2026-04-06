@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise ATS de Currículo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📄 Análise ATS de Currículo</h1>
+            <p>Verifique se seu currículo está otimizado para sistemas de triagem automatizada</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section class="upload-section" id="uploadSection">
+            <div class="upload-box" id="uploadBox">
+                <div class="upload-icon">📤</div>
+                <h2>Arraste seu currículo aqui</h2>
+                <p>ou clique para selecionar</p>
+                <input type="file" id="fileInput" accept=".pdf" hidden>
+                <button class="btn btn-primary" id="selectFileBtn">Selecionar PDF</button>
+                <p class="file-info">Apenas arquivos PDF (máx. 16MB)</p>
+            </div>
+            
+            <!-- File Preview -->
+            <div class="file-preview hidden" id="filePreview">
+                <div class="file-icon">📄</div>
+                <div class="file-details">
+                    <span class="file-name" id="fileName"></span>
+                    <span class="file-size" id="fileSize"></span>
+                </div>
+                <button class="btn btn-remove" id="removeFileBtn">✕</button>
+            </div>
+            
+            <button class="btn btn-analyze hidden" id="analyzeBtn">
+                🔍 Analisar Currículo
+            </button>
+        </section>
+
+        <!-- Loading -->
+        <div class="loading hidden" id="loading">
+            <div class="spinner"></div>
+            <p>Analisando currículo...</p>
+        </div>
+
+        <!-- Results Section -->
+        <section class="results-section hidden" id="resultsSection">
+            <!-- Score Card -->
+            <div class="score-card" id="scoreCard">
+                <div class="score-main">
+                    <div class="score-circle" id="scoreCircle">
+                        <span class="score-value" id="scoreValue">0</span>
+                        <span class="score-label">pontos</span>
+                    </div>
+                    <div class="score-info">
+                        <h2 id="matchLevel">-</h2>
+                        <p id="recommendation">-</p>
+                    </div>
+                </div>
+                
+                <div class="score-details">
+                    <div class="score-item">
+                        <span class="score-item-label">Keywords</span>
+                        <div class="score-bar">
+                            <div class="score-bar-fill" id="keywordBar"></div>
+                        </div>
+                        <span class="score-item-value" id="keywordScore">0%</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-item-label">Estrutura</span>
+                        <div class="score-bar">
+                            <div class="score-bar-fill" id="structureBar"></div>
+                        </div>
+                        <span class="score-item-value" id="structureScore">0%</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-item-label">Legibilidade</span>
+                        <div class="score-bar">
+                            <div class="score-bar-fill" id="readabilityBar"></div>
+                        </div>
+                        <span class="score-item-value" id="readabilityScore">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" data-tab="keywords">🔑 Keywords</button>
+                <button class="tab" data-tab="extracted">📋 Dados Extraídos</button>
+                <button class="tab" data-tab="structure">🏗️ Estrutura</button>
+                <button class="tab" data-tab="contact">📞 Contato</button>
+                <button class="tab" data-tab="feedback">💬 Feedback</button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="tab-content active" id="tab-keywords">
+                <h3>Keywords Técnicas Identificadas</h3>
+                <div class="keywords-grid" id="keywordsGrid"></div>
+                
+                <h3>Áreas de Atuação Detectadas</h3>
+                <div class="areas-list" id="areasList"></div>
+            </div>
+
+            <div class="tab-content" id="tab-extracted">
+                <h3>📝 Dados Estruturados do Currículo</h3>
+                <p class="tab-description">Informações que um sistema ATS consegue extrair automaticamente:</p>
+                <div class="extracted-data-content" id="extractedDataContent">
+                    <p class="no-data">Processando...</p>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-structure">
+                <h3>Seções Detectadas</h3>
+                <div class="sections-list" id="sectionsList"></div>
+                
+                <h3>Seções Faltando</h3>
+                <div class="sections-missing" id="sectionsMissing"></div>
+            </div>
+
+            <div class="tab-content" id="tab-contact">
+                <h3>Informações de Contato</h3>
+                <div class="contact-grid" id="contactGrid"></div>
+            </div>
+
+            <div class="tab-content" id="tab-feedback">
+                <div class="feedback-section" id="warnings">
+                    <h3>⚠️ Alertas</h3>
+                    <div class="feedback-list"></div>
+                </div>
+                
+                <div class="feedback-section" id="suggestions">
+                    <h3>💡 Sugestões</h3>
+                    <div class="feedback-list"></div>
+                </div>
+                
+                <div class="feedback-section" id="positives">
+                    <h3>✅ Pontos Positivos</h3>
+                    <div class="feedback-list"></div>
+                </div>
+            </div>
+
+            <!-- Extraction Info -->
+            <div class="extraction-info">
+                <h3>📊 Informações da Extração</h3>
+                <div class="extraction-grid" id="extractionGrid"></div>
+            </div>
+
+            <!-- New Analysis Button -->
+            <button class="btn btn-new" id="newAnalysisBtn">
+                🔄 Nova Análise
+            </button>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Desenvolvido para análise de compatibilidade ATS</p>
+            <p>Este sistema simula a leitura que sistemas ATS fazem do seu currículo</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

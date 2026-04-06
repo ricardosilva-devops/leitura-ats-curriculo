@@ -1,0 +1,263 @@
+# =============================================================================
+# KUBERNETES DEPLOYMENT - Leitura ATS
+# =============================================================================
+#
+# Deployment da aplicação Flask de análise ATS de currículos.
+# 
+# Configurações implementadas:
+# - Rolling update strategy para zero downtime
+# - Resource requests/limits para garantir QoS
+# - Health checks (liveness e readiness probes)
+# - Anti-affinity para distribuição de pods entre nodes
+# - Security context para execução não-privilegiada
+#
+# =============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leitura-ats
+  namespace: default
+  labels:
+    app: leitura-ats
+    component: backend
+    tier: application
+  annotations:
+    description: "Aplicação Flask para análise ATS de currículos"
+    maintainer: "ricardo-silva-jr"
+spec:
+  # Número de réplicas para alta disponibilidade
+  replicas: 2
+  
+  # Seletor de pods gerenciados por este deployment
+  selector:
+    matchLabels:
+      app: leitura-ats
+  
+  # Estratégia de atualização - Rolling Update para zero downtime
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # 1 pod adicional durante update
+      maxUnavailable: 0  # Sempre manter pelo menos 2 pods rodando
+  
+  # Template do pod
+  template:
+    metadata:
+      labels:
+        app: leitura-ats
+        component: backend
+        tier: application
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+        prometheus.io/path: "/metrics"
+    
+    spec:
+      # Security Context a nível de pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      # Anti-affinity para distribuir pods entre nodes diferentes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - leitura-ats
+                topologyKey: kubernetes.io/hostname
+      
+      # Containers
+      containers:
+        - name: app
+          # Imagem do ECR (substituir pelo URL real após terraform apply)
+          image: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/leitura-ats-app:latest
+          imagePullPolicy: Always
+          
+          # Porta exposta pelo container
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          
+          # Variáveis de ambiente
+          env:
+            - name: FLASK_ENV
+              value: "production"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: LOG_LEVEL
+              value: "INFO"
+            # S3 bucket para armazenamento (via ConfigMap)
+            - name: S3_BUCKET_CURRICULOS
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: s3_bucket_name
+            # AWS Region
+            - name: AWS_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: aws_region
+          
+          # Resource Requests e Limits
+          # Requests: Recursos garantidos
+          # Limits: Recursos máximos permitidos
+          resources:
+            requests:
+              cpu: 250m       # 0.25 vCPU
+              memory: 256Mi   # 256 MiB
+            limits:
+              cpu: 500m       # 0.5 vCPU
+              memory: 512Mi   # 512 MiB
+          
+          # Liveness Probe - Verifica se o container está vivo
+          # Se falhar, Kubernetes reinicia o pod
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          
+          # Readiness Probe - Verifica se o container está pronto para receber tráfego
+          # Se falhar, remove o pod do Service
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 2
+          
+          # Volume mounts para logs persistentes
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+            - name: tmp
+              mountPath: /tmp
+      
+      # Volumes
+      volumes:
+        # EmptyDir para logs (persistem durante a vida do pod)
+        - name: logs
+          emptyDir: {}
+        # EmptyDir para arquivos temporários
+        - name: tmp
+          emptyDir: {}
+      
+      # DNS Policy
+      dnsPolicy: ClusterFirst
+      
+      # Restart Policy
+      restartPolicy: Always
+      
+      # Tempo máximo para terminar um pod gracefully
+      terminationGracePeriodSeconds: 30
+
+---
+# =============================================================================
+# HORIZONTAL POD AUTOSCALER (HPA)
+# =============================================================================
+#
+# Escala automática baseada em métricas de CPU e memória.
+# Aumenta/diminui o número de réplicas automaticamente.
+#
+# =============================================================================
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: leitura-ats-hpa
+  namespace: default
+  labels:
+    app: leitura-ats
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: leitura-ats
+  
+  # Número mínimo e máximo de réplicas
+  minReplicas: 2
+  maxReplicas: 10
+  
+  # Métricas para scaling
+  metrics:
+    # CPU - Escalar quando usar mais de 70% do request
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    
+    # Memory - Escalar quando usar mais de 80% do request
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  
+  # Comportamento de scaling
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+      selectPolicy: Max
+    
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+      selectPolicy: Min
+
+---
+# =============================================================================
+# POD DISRUPTION BUDGET (PDB)
+# =============================================================================
+#
+# Garante disponibilidade mínima durante manutenções voluntárias
+# (node drains, cluster upgrades, etc)
+#
+# =============================================================================
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: leitura-ats-pdb
+  namespace: default
+  labels:
+    app: leitura-ats
+spec:
+  # Manter sempre pelo menos 1 pod disponível
+  minAvailable: 1
+  
+  selector:
+    matchLabels:
+      app: leitura-ats

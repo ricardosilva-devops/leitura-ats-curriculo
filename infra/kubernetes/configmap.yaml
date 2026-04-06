@@ -1,0 +1,94 @@
+# =============================================================================
+# CONFIGMAP - Configurações da Aplicação
+# =============================================================================
+#
+# Armazena configurações não-sensíveis da aplicação.
+# Separado do código para facilitar mudanças sem rebuild da imagem.
+#
+# =============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: default
+  labels:
+    app: leitura-ats
+data:
+  # AWS Region
+  aws_region: "us-east-1"
+  
+  # S3 Bucket para armazenamento de currículos
+  # (valor será substituído após terraform apply)
+  s3_bucket_name: "leitura-ats-curriculos-dev-ACCOUNT_ID"
+  
+  # Flask configuration
+  flask_env: "production"
+  flask_debug: "0"
+  
+  # Logging
+  log_level: "INFO"
+  log_format: "json"
+  
+  # Upload settings
+  max_content_length: "16777216"  # 16MB em bytes
+  allowed_extensions: ".pdf"
+  
+  # NLTK Data Path
+  nltk_data: "/app/nltk_data"
+
+---
+# =============================================================================
+# SECRET - Credenciais e Dados Sensíveis
+# =============================================================================
+#
+# Armazena dados sensíveis da aplicação.
+# IMPORTANTE: Em produção, usar AWS Secrets Manager ou HashiCorp Vault
+#
+# Valores devem ser codificados em base64:
+# echo -n "valor" | base64
+#
+# =============================================================================
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: default
+  labels:
+    app: leitura-ats
+type: Opaque
+data:
+  # Secret key do Flask (exemplo - TROCAR EM PRODUÇÃO)
+  # echo -n "change-me-in-production-1234567890" | base64
+  flask_secret_key: Y2hhbmdlLW1lLWluLXByb2R1Y3Rpb24tMTIzNDU2Nzg5MA==
+  
+  # AWS Credentials (se não usar IRSA)
+  # Em produção, USAR IRSA (IAM Roles for Service Accounts)
+  # aws_access_key_id: ""
+  # aws_secret_access_key: ""
+
+---
+# =============================================================================
+# SERVICE ACCOUNT - Para IRSA (IAM Roles for Service Accounts)
+# =============================================================================
+#
+# Service Account com anotação para IRSA.
+# Permite que pods assumam roles IAM sem credenciais hardcoded.
+#
+# Após criar IAM Role com Terraform, adicionar annotation:
+# eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/leitura-ats-pod-role
+#
+# =============================================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: leitura-ats-sa
+  namespace: default
+  labels:
+    app: leitura-ats
+  annotations:
+    # ARN do IAM Role (será preenchido após terraform apply)
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/leitura-ats-pod-role
+    description: "Service Account para pods da aplicação Leitura ATS"
