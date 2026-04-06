@@ -2,7 +2,7 @@
 
 Aplicação web para análise de legibilidade de currículos em PDF, simulando como sistemas ATS (Applicant Tracking System) interpretam documentos.
 
-> **Projeto de Portfólio** focado em infraestrutura: Python, Docker, com roadmap para Terraform e Kubernetes.
+> **Projeto de Portfólio** focado em infraestrutura: demonstra empacotamento, operação e automação com Python, Docker e CI, com roadmap para orquestração em cloud (Terraform, Kubernetes).
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
 ![Flask](https://img.shields.io/badge/Flask-3.0-green?logo=flask)
@@ -13,17 +13,18 @@ Aplicação web para análise de legibilidade de currículos em PDF, simulando c
 
 ## 📋 Estado Atual (v0.1.0)
 
-**✅ Implementado e funcionando:**
+**✅ Implementado:**
 - Aplicação Flask para análise de PDF
 - Motor ATS com NLP (NLTK) em português
 - Interface web responsiva (drag-and-drop)
 - Docker com imagem otimizada
-- Scripts operacionais
+- Scripts operacionais (setup, start, stop, health-check)
+- CI básico com GitHub Actions (lint, build, health check)
 
-**🚧 Em desenvolvimento (roadmap):**
-- Terraform para AWS (código pronto, não deployado)
-- Kubernetes manifests (prontos, não deployados)
-- CI/CD com GitHub Actions
+**📝 Código pronto, não deployado:**
+- Terraform para AWS (VPC, EKS, ECR, S3)
+- Kubernetes manifests (Deployment, Service, Ingress)
+- Configuração de Nginx e Supervisor
 
 ---
 
@@ -144,11 +145,12 @@ leitura-ats-curriculo/
 
 | Tecnologia | Status | Descrição |
 |------------|--------|-----------|
-| Docker Compose | 🔜 Próximo | Orquestração local |
-| Nginx | 🔜 Próximo | Reverse proxy |
-| Terraform | 📝 Código pronto | IaC para AWS |
-| Kubernetes | 📝 Manifests prontos | Orquestração |
-| GitHub Actions | 🔜 Próximo | CI/CD |
+| Docker | ✅ Implementado | Build e execução funcionais |
+| GitHub Actions | ✅ Implementado | CI: lint, build, health check |
+| Docker Compose | 📋 Planejado | Orquestração local multi-container |
+| Nginx + Supervisor | 📝 Código pronto | Reverse proxy e gestão de processos |
+| Terraform | 📝 Código pronto | IaC para AWS (não validado em deploy) |
+| Kubernetes | 📝 Código pronto | Manifests para EKS (não validado em deploy) |
 
 Ver [docs/ROADMAP.md](docs/ROADMAP.md) para detalhes.
 
@@ -169,18 +171,29 @@ curl -X POST http://localhost:5000/analyze \
 ```json
 {
   "success": true,
-  "analysis": {
-    "final_score": 72,
-    "keyword_score": 68,
-    "structure_score": 78,
-    "readability_score": 70,
-    "keywords_found": ["python", "aws", "docker", "linux"],
-    "sections_detected": ["experiência", "formação", "habilidades"]
+  "extraction": {
+    "page_count": 2,
+    "word_count": 450
   },
-  "extracted_data": {
-    "name": "Nome do Candidato",
-    "experiences": [...],
-    "skills": [...]
+  "analysis": {
+    "final_score": 78,
+    "keyword_score": 82,
+    "structure_score": 75,
+    "readability_score": 76,
+    "match_level": "BOM",
+    "keywords_found": [
+      {"keyword": "linux", "found_as": "Linux", "match_type": "exact", "importance": "high"},
+      {"keyword": "aws", "found_as": "AWS", "match_type": "exact", "importance": "high"}
+    ],
+    "sections_detected": [
+      {"name": "experiência", "detected": true},
+      {"name": "formação", "detected": true}
+    ],
+    "extracted_data": {
+      "name": "Nome do Candidato",
+      "experiences": [...],
+      "skills": [...]
+    }
   }
 }
 ```

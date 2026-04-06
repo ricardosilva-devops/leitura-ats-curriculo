@@ -11,8 +11,9 @@ Este documento descreve a evolução planejada do projeto, desde o ambiente loca
 - Análise de PDF com NLP
 - Frontend responsivo
 - Docker (imagem otimizada)
-- Código de infraestrutura Terraform (pronto para uso)
-- Manifests Kubernetes (prontos para uso)
+- CI básico (GitHub Actions: lint, build, health check)
+- Código de infraestrutura Terraform (pronto, não deployado)
+- Manifests Kubernetes (prontos, não deployados)
 
 ---
 
@@ -47,22 +48,21 @@ Navegador → Nginx (80/443) → Gunicorn (5000) → Flask
 
 ## Fase 2: Qualidade e CI/CD
 
-**Objetivo:** Pipeline automatizado de qualidade.
+**Objetivo:** Pipeline completo de qualidade.
 
-### 2.1 Testes
+### 2.1 CI Básico (Implementado)
+- [x] Lint Python (flake8)
+- [x] Build Docker
+- [x] Health check automatizado
+
+### 2.2 Testes
 - [ ] Testes unitários (pytest)
 - [ ] Testes de integração
 - [ ] Cobertura mínima 70%
 
-### 2.2 Linting
-- [ ] Flake8 para estilo Python
+### 2.3 CI/CD Completo
 - [ ] Black para formatação
 - [ ] isort para imports
-
-### 2.3 GitHub Actions
-- [ ] Workflow de lint em PR
-- [ ] Build de imagem Docker
-- [ ] Teste de health check
 - [ ] Push para ECR (quando aprovado)
 
 **Pipeline:**

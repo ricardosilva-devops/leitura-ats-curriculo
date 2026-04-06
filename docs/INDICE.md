@@ -22,8 +22,8 @@
 
 | Documento | Descrição |
 |-----------|-----------|
-| [ARQUITETURA.md](ARQUITETURA.md) | Arquitetura atual (Flask + Docker) |
-| [ARQUITETURA_AWS.md](ARQUITETURA_AWS.md) | Arquitetura cloud AWS (roadmap) |
+| [ARQUITETURA.md](ARQUITETURA.md) | Arquitetura atual (Flask + Docker local) |
+| [ARQUITETURA_AWS.md](ARQUITETURA_AWS.md) | Arquitetura AWS (código pronto, não deployado) |
 | [DECISOES_TECNICAS.md](DECISOES_TECNICAS.md) | Justificativas das escolhas |
 
 ## 📈 Evolução

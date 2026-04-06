@@ -1,6 +1,9 @@
-# 🔧 Manual de Instalação Local
+# 🔧 Manual de Instalação
 
 Guia completo para configurar o ambiente de desenvolvimento.
+
+> **Ambiente principal:** Linux ou WSL (Windows Subsystem for Linux).  
+> Os scripts `./scripts/*.sh` foram escritos para bash. Em Windows nativo, siga as instruções manuais.
 
 ---
 
@@ -8,7 +11,7 @@ Guia completo para configurar o ambiente de desenvolvimento.
 
 | Requisito | Versão Mínima | Verificar |
 |-----------|---------------|-----------|
-| Python | 3.10+ (recomendado 3.12) | `python --version` |
+| Python | 3.10+ (recomendado 3.12) | `python3 --version` |
 | pip | 21.0+ | `pip --version` |
 | Git | 2.0+ | `git --version` |
 
@@ -16,11 +19,22 @@ Guia completo para configurar o ambiente de desenvolvimento.
 | Requisito | Versão Mínima | Verificar |
 |-----------|---------------|-----------|
 | Docker | 20.0+ | `docker --version` |
-| Docker Compose | 2.0+ | `docker compose version` |
 
 ---
 
-## Instalação Passo a Passo
+## Instalação Rápida (Linux/WSL)
+
+```bash
+git clone https://github.com/ricardosilva-devops/leitura-ats-curriculo.git
+cd leitura-ats-curriculo
+./scripts/setup.sh
+./scripts/start.sh
+# Acessar: http://localhost:5000
+```
+
+---
+
+## Instalação Manual
 
 ### 1. Clonar o Repositório
 
@@ -31,7 +45,7 @@ cd leitura-ats-curriculo
 
 ### 2. Criar Ambiente Virtual
 
-**Linux/macOS:**
+**Linux/macOS/WSL:**
 ```bash
 python3 -m venv venv
 source venv/bin/activate
@@ -41,12 +55,6 @@ source venv/bin/activate
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-```
-
-**Windows (CMD):**
-```cmd
-python -m venv venv
-.\venv\Scripts\activate.bat
 ```
 
 > 💡 O prompt deve mudar para `(venv)` indicando que o ambiente está ativo.
@@ -128,13 +136,13 @@ curl http://localhost:5000/health
 
 Abrir no navegador: http://localhost:5000
 
-Você deve ver a página de upload de currículos.
-
 ### 3. Testar Análise
+
+Faça upload de um currículo em PDF pela interface ou via cURL:
 
 ```bash
 curl -X POST http://localhost:5000/analyze \
-  -F "file=@exemplos/curriculo_exemplo.pdf"
+  -F "file=@seu-curriculo.pdf"
 ```
 
 ---

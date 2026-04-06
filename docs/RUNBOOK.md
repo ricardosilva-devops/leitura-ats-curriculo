@@ -61,7 +61,7 @@ kill $(cat app.pid)
 Get-Process -Name python | Stop-Process
 ```
 
-### Usar Script de Controle
+### Usar Scripts de Controle
 
 ```bash
 # Iniciar
@@ -70,8 +70,8 @@ Get-Process -Name python | Stop-Process
 # Parar
 ./scripts/stop.sh
 
-# Reiniciar
-./scripts/restart.sh
+# Health check
+./scripts/health-check.sh
 ```
 
 ---
@@ -190,10 +190,13 @@ curl -s http://localhost:5000/health | jq .
 
 ### Teste de Upload via cURL
 
+Faça upload de um currículo em PDF:
+
 ```bash
 curl -X POST http://localhost:5000/analyze \
-  -F "file=@exemplos/curriculo_exemplo.pdf" \
+  -F "file=@seu-curriculo.pdf" \
   | jq .
+```
 ```
 
 ### Teste Rápido com Script

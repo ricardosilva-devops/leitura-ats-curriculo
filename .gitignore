@@ -6,7 +6,6 @@ __pycache__/
 .Python
 venv/
 env/
-ENV/
 .venv/
 
 # Distribution
@@ -51,18 +50,5 @@ Thumbs.db
 .terraform.lock.hcl
 *.tfvars
 
-# Arquivos de teste/rascunho
-*.docx
+# Arquivos temporários
 *.bak
-
-# Ambientes virtuais Windows/Linux
-venv/
-env/
-ENV/
-.venv/
-
-# Arquivos temporários Python
-*.pyc
-__pycache__/
-*.pyo
-*.pyd

@@ -191,11 +191,15 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key')
 ### Gunicorn (gunicorn_config.py)
 
 ```python
-bind = "0.0.0.0:5000"      # Interface e porta
-workers = 2                 # Processos paralelos
-threads = 4                 # Threads por worker
-timeout = 120               # Timeout de request
+bind = "0.0.0.0:5000"
+workers = int(os.getenv("GUNICORN_WORKERS", multiprocessing.cpu_count() * 2 + 1))
+worker_class = "sync"
+timeout = 120
+graceful_timeout = 30
+loglevel = os.getenv("LOG_LEVEL", "info")
 ```
+
+> Configuração dinâmica: o número de workers é calculado automaticamente com base nos CPUs disponíveis, mas pode ser sobrescrito via variável de ambiente `GUNICORN_WORKERS`.
 
 ---
 
