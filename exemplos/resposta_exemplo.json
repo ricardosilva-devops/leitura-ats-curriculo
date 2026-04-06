@@ -1,87 +1,84 @@
 {
-  "exemplo_resposta": {
-    "success": true,
-    "analysis": {
-      "final_score": 78,
-      "keyword_score": 82,
-      "structure_score": 75,
-      "readability_score": 76,
-      "keywords_found": [
-        "linux",
-        "ubuntu",
-        "centos",
-        "aws",
-        "docker",
-        "kubernetes",
-        "terraform",
-        "ansible",
-        "jenkins",
-        "gitlab",
-        "zabbix",
-        "prometheus",
-        "grafana",
-        "python",
-        "bash",
-        "mysql",
-        "postgresql",
-        "git"
-      ],
-      "sections_detected": [
-        "resumo",
-        "experiência",
-        "formação",
-        "habilidades",
-        "certificações",
-        "idiomas"
-      ],
-      "suggestions": [
-        "Considere adicionar mais projetos práticos",
-        "Quantifique mais resultados (ex: 'reduzi custos em X%')"
-      ]
+  "success": true,
+  "extraction": {
+    "page_count": 2,
+    "word_count": 485,
+    "char_count": 3120,
+    "has_images": false,
+    "has_tables": false,
+    "warnings": [],
+    "sections_detected": ["experiência", "formação", "habilidades"],
+    "text_preview": "RICARDO DA SILVA JÚNIOR\nAnalista de Infraestrutura..."
+  },
+  "analysis": {
+    "final_score": 78,
+    "keyword_score": 82,
+    "structure_score": 75,
+    "readability_score": 76,
+    "match_level": "BOM",
+    "recommendation": "Currículo bem estruturado para sistemas ATS",
+    "keywords_found": [
+      {"keyword": "linux", "found_as": "Linux", "match_type": "exact", "importance": "high"},
+      {"keyword": "aws", "found_as": "AWS", "match_type": "exact", "importance": "high"},
+      {"keyword": "docker", "found_as": "Docker", "match_type": "exact", "importance": "high"},
+      {"keyword": "python", "found_as": "Python", "match_type": "exact", "importance": "medium"}
+    ],
+    "keywords_critical": ["linux", "aws"],
+    "keywords_by_area": {
+      "infraestrutura": ["linux", "aws", "docker"],
+      "programacao": ["python", "bash"]
     },
+    "sections_detected": [
+      {"name": "experiência", "detected": true},
+      {"name": "formação", "detected": true},
+      {"name": "habilidades", "detected": true},
+      {"name": "resumo", "detected": false}
+    ],
+    "sections_missing": ["resumo"],
+    "contact_info": {
+      "email": "exemplo@email.com",
+      "phone": "(54) 99999-9999",
+      "linkedin": "linkedin.com/in/exemplo"
+    },
+    "warnings": ["Seção 'Resumo Profissional' não encontrada"],
+    "suggestions": [
+      "Adicione um resumo profissional no início",
+      "Quantifique resultados (ex: 'reduzi custos em 20%')"
+    ],
+    "positives": [
+      "Boa quantidade de keywords técnicas",
+      "Estrutura de seções clara"
+    ],
+    "total_words": 485,
+    "unique_keywords": 12,
+    "processing_time_ms": 145,
     "extracted_data": {
-      "name": "João da Silva Teste",
-      "email": "joao.teste@email.com",
-      "phone": "(11) 99999-9999",
-      "location": "São Paulo, SP",
+      "name": "Ricardo da Silva Júnior",
+      "email": "exemplo@email.com",
+      "phone": "(54) 99999-9999",
+      "linkedin": "linkedin.com/in/exemplo",
+      "location": "Caxias do Sul, RS",
+      "summary": null,
+      "objective": null,
       "experiences": [
         {
-          "title": "Analista de Infraestrutura Pleno",
-          "company": "Empresa Tecnologia Fictícia Ltda",
+          "company": "Empresa Tecnologia Ltda",
+          "role": "Analista de Infraestrutura",
           "period": "Jan/2022 - Presente",
-          "duration_months": 28
-        },
-        {
-          "title": "Analista de Suporte Jr",
-          "company": "Outra Empresa Fictícia S.A.",
-          "period": "Mar/2019 - Dez/2021",
-          "duration_months": 33
+          "start_date": "2022-01",
+          "end_date": null,
+          "description": "Administração de servidores Linux, AWS, Docker"
         }
       ],
-      "education": [
-        {
-          "degree": "Tecnólogo",
-          "field": "Análise e Desenvolvimento de Sistemas",
-          "institution": "Faculdade Fictícia de Tecnologia",
-          "year": "2019"
-        }
-      ],
-      "skills": [
-        "Linux",
-        "AWS",
-        "Docker",
-        "Kubernetes",
-        "Terraform",
-        "Ansible",
-        "Jenkins",
-        "Python",
-        "Bash"
-      ],
-      "certifications": [
-        "AWS Certified Cloud Practitioner",
-        "LPI Linux Essentials"
-      ]
+      "education": ["Tecnólogo em Redes de Computadores - 2019"],
+      "skills": ["Linux", "AWS", "Docker", "Python", "Bash"],
+      "skills_by_category": {
+        "sistemas_operacionais": ["Linux", "Ubuntu", "CentOS"],
+        "cloud": ["AWS", "EC2", "S3"],
+        "containers": ["Docker"]
+      },
+      "languages": ["Português (nativo)", "Inglês (básico)"],
+      "certifications": ["AWS Cloud Practitioner"]
     }
-  },
-  "_nota": "Este é um exemplo de resposta JSON da API /analyze. Use para entender o formato de saída."
+  }
 }

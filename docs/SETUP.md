@@ -1,28 +1,11 @@
 # 🔧 Manual de Instalação
 
-Guia completo para configurar o ambiente de desenvolvimento.
-
-> **Ambiente principal:** Linux ou WSL (Windows Subsystem for Linux).  
-> Os scripts `./scripts/*.sh` foram escritos para bash. Em Windows nativo, siga as instruções manuais.
+> **Ambiente:** Linux ou WSL (Windows Subsystem for Linux).  
+> Os scripts usam bash. Em Windows nativo, siga a instalação manual.
 
 ---
 
-## Pré-requisitos
-
-| Requisito | Versão Mínima | Verificar |
-|-----------|---------------|-----------|
-| Python | 3.10+ (recomendado 3.12) | `python3 --version` |
-| pip | 21.0+ | `pip --version` |
-| Git | 2.0+ | `git --version` |
-
-**Opcional (para Docker):**
-| Requisito | Versão Mínima | Verificar |
-|-----------|---------------|-----------|
-| Docker | 20.0+ | `docker --version` |
-
----
-
-## Instalação Rápida (Linux/WSL)
+## Instalação Rápida
 
 ```bash
 git clone https://github.com/ricardosilva-devops/leitura-ats-curriculo.git
@@ -32,34 +15,39 @@ cd leitura-ats-curriculo
 # Acessar: http://localhost:5000
 ```
 
+O `setup.sh` faz automaticamente:
+1. Cria ambiente virtual (`venv/`)
+2. Instala dependências Python
+3. Baixa dados NLTK
+4. Cria pasta de logs
+
+---
+
+## Pré-requisitos
+
+| Requisito | Versão | Verificar |
+|-----------|--------|-----------|
+| Python | 3.10+ | `python3 --version` |
+| pip | 21.0+ | `pip --version` |
+| Git | 2.0+ | `git --version` |
+| Docker | 20.0+ (opcional) | `docker --version` |
+
 ---
 
 ## Instalação Manual
 
-### 1. Clonar o Repositório
+Se preferir não usar os scripts:
+
+### 1. Clonar e criar ambiente
 
 ```bash
 git clone https://github.com/ricardosilva-devops/leitura-ats-curriculo.git
 cd leitura-ats-curriculo
-```
-
-### 2. Criar Ambiente Virtual
-
-**Linux/macOS/WSL:**
-```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-**Windows (PowerShell):**
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-```
-
-> 💡 O prompt deve mudar para `(venv)` indicando que o ambiente está ativo.
-
-### 3. Instalar Dependências Python
+### 2. Instalar Dependências
 
 ```bash
 pip install --upgrade pip
@@ -72,7 +60,7 @@ pip install -r requirements.txt
 - NLTK 3.8 (processamento de linguagem natural)
 - Gunicorn 21.0 (servidor WSGI)
 
-### 4. Baixar Dados do NLTK
+### 3. Baixar Dados NLTK
 
 O NLTK precisa de dados para processamento de português:
 
@@ -85,7 +73,7 @@ python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab'); nltk
 - `punkt_tab` - Dados tabulares para tokenização
 - `rslp` - Stemmer para português (Removedor de Sufixos da Língua Portuguesa)
 
-### 5. Verificar Instalação
+### 4. Verificar Instalação
 
 ```bash
 cd aplicacao
@@ -165,56 +153,18 @@ leitura-ats-curriculo/
 
 ---
 
-## Erros Comuns no Setup
+## Erros Comuns
 
-### "No module named 'flask'"
-
-**Causa:** Ambiente virtual não está ativo ou dependências não instaladas.
-
-**Solução:**
-```bash
-source venv/bin/activate  # ou .\venv\Scripts\Activate.ps1 no Windows
-pip install -r requirements.txt
-```
-
-### "NLTK punkt not found"
-
-**Causa:** Dados do NLTK não foram baixados.
-
-**Solução:**
-```bash
-python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab'); nltk.download('rslp')"
-```
-
-### "Address already in use" (porta 5000)
-
-**Causa:** Outro processo usando a porta 5000.
-
-**Solução Linux/macOS:**
-```bash
-lsof -i :5000
-kill -9 <PID>
-```
-
-**Solução Windows:**
-```powershell
-netstat -ano | findstr :5000
-taskkill /PID <PID> /F
-```
-
-### "Permission denied" ao criar logs
-
-**Causa:** Falta permissão na pasta de logs.
-
-**Solução:**
-```bash
-mkdir -p aplicacao/logs
-chmod 755 aplicacao/logs
-```
+| Erro | Causa | Solução |
+|------|-------|---------|
+| `No module named 'flask'` | venv não ativo | `source venv/bin/activate` |
+| `NLTK punkt not found` | Dados não baixados | `python -c "import nltk; nltk.download('punkt')"` |
+| `Address already in use` | Porta 5000 ocupada | `lsof -i :5000` e `kill <PID>` |
+| `Permission denied` logs | Sem permissão | `mkdir -p logs && chmod 755 logs` |
 
 ---
 
 ## Próximos Passos
 
-- [RUNBOOK.md](RUNBOOK.md) - Como operar a aplicação
-- [README.md](../README.md) - Voltar para visão geral
+- [RUNBOOK.md](RUNBOOK.md) — Operação (start, stop, logs)
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Mais problemas

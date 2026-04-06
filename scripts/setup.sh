@@ -63,7 +63,7 @@ except Exception as e:
 # Criar diretórios necessários
 echo ""
 echo "📁 Criando diretórios..."
-mkdir -p aplicacao/logs
+mkdir -p logs
 echo -e "  ${GREEN}✓${NC} Pasta de logs criada"
 
 # Verificar instalação

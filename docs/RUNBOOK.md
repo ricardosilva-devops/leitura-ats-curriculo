@@ -1,260 +1,136 @@
 # 📋 Manual Operacional (Runbook)
 
-Guia para operar a aplicação Leitura ATS no dia a dia.
+> **Ambiente:** Linux/WSL. Comandos assumem bash.
 
 ---
 
-## Índice
+## 1. Iniciar/Parar
 
-1. [Iniciar/Parar Aplicação](#1-iniciarparar-aplicação)
-2. [Operação com Docker](#2-operação-com-docker)
-3. [Verificação de Logs](#3-verificação-de-logs)
-4. [Testes de Funcionamento](#4-testes-de-funcionamento)
-5. [Manutenção](#5-manutenção)
-
----
-
-## 1. Iniciar/Parar Aplicação
-
-### Iniciar (Modo Desenvolvimento)
+### Via Scripts (recomendado)
 
 ```bash
-cd aplicacao
-source ../venv/bin/activate  # Linux/macOS
-# ou: ..\venv\Scripts\Activate.ps1  # Windows
-
-python app.py
-```
-
-### Iniciar (Modo Produção com Gunicorn)
-
-```bash
-cd aplicacao
-gunicorn --config gunicorn_config.py wsgi:app
-```
-
-### Iniciar em Background
-
-**Linux/macOS:**
-```bash
-cd aplicacao
-nohup gunicorn --config gunicorn_config.py wsgi:app > ../logs/app.log 2>&1 &
-echo $! > ../app.pid
-echo "Aplicação iniciada. PID: $(cat ../app.pid)"
-```
-
-**Windows (PowerShell):**
-```powershell
-Start-Process -NoNewWindow -FilePath "gunicorn" -ArgumentList "--config gunicorn_config.py wsgi:app"
-```
-
-### Parar Aplicação
-
-**Se rodando em foreground:** `Ctrl+C`
-
-**Se rodando em background:**
-```bash
-# Linux/macOS
-kill $(cat app.pid)
-
-# Windows
-Get-Process -Name python | Stop-Process
-```
-
-### Usar Scripts de Controle
-
-```bash
-# Iniciar
-./scripts/start.sh
-
-# Parar
-./scripts/stop.sh
-
-# Health check
+./scripts/start.sh       # Modo dev (Flask)
+./scripts/start.sh prod  # Modo prod (Gunicorn)
+./scripts/start.sh bg    # Background (Gunicorn + PID)
+./scripts/stop.sh        # Para a aplicação
 ./scripts/health-check.sh
 ```
 
+### Manual
+
+```bash
+# Ativar venv
+source venv/bin/activate
+
+# Desenvolvimento
+cd aplicacao && python app.py
+
+# Produção
+cd aplicacao && gunicorn --config gunicorn_config.py wsgi:app
+
+# Background
+cd aplicacao
+nohup gunicorn --config gunicorn_config.py wsgi:app > ../logs/gunicorn.log 2>&1 &
+echo $! > ../app.pid
+```
+
+### Parar
+
+```bash
+# Se em foreground: Ctrl+C
+
+# Se em background:
+kill $(cat app.pid)
+# ou
+./scripts/stop.sh
+```
+
 ---
 
-## 2. Operação com Docker
-
-### Build da Imagem
+## 2. Docker
 
 ```bash
-docker build -t leitura-ats:latest -f imagem-aplicacao/Dockerfile .
-```
+# Build
+./scripts/build-docker.sh
+# ou: docker build -t leitura-ats -f imagem-aplicacao/Dockerfile .
 
-### Executar Container
+# Executar (foreground)
+./scripts/run-docker.sh
+# ou: docker run -p 5000:5000 leitura-ats
 
-```bash
-# Foreground (ver logs)
-docker run -p 5000:5000 leitura-ats:latest
+# Executar (background)
+docker run -d -p 5000:5000 --name leitura-ats leitura-ats
 
-# Background (detached)
-docker run -d -p 5000:5000 --name leitura-ats leitura-ats:latest
-```
-
-### Verificar Container
-
-```bash
-# Status
-docker ps -a | grep leitura-ats
-
-# Logs
+# Verificar
+docker ps | grep leitura-ats
 docker logs leitura-ats
 
-# Logs em tempo real
-docker logs -f leitura-ats
-```
-
-### Parar/Remover Container
-
-```bash
 # Parar
-docker stop leitura-ats
-
-# Remover
-docker rm leitura-ats
-
-# Parar e remover
-docker rm -f leitura-ats
-```
-
-### Entrar no Container (debug)
-
-```bash
-docker exec -it leitura-ats /bin/bash
+docker stop leitura-ats && docker rm leitura-ats
 ```
 
 ---
 
-## 3. Verificação de Logs
+## 3. Logs
 
-### Localização dos Logs
+### Localização
 
-| Ambiente | Caminho |
-|----------|---------|
-| Local | `aplicacao/logs/` |
-| Docker | `/app/logs/` (dentro do container) |
+| Tipo | Caminho |
+|------|---------|
+| Logs de análise | `logs/analise_YYYYMMDD_HHMMSS.txt` |
+| Gunicorn (background) | `logs/gunicorn.log` |
+| Docker | `docker logs leitura-ats` |
 
-### Visualizar Logs
+### Comandos úteis
 
 ```bash
-# Últimas 50 linhas
-tail -50 aplicacao/logs/analise_*.txt
+# Ver últimos logs de análise
+tail -50 logs/analise_*.txt
 
 # Acompanhar em tempo real
-tail -f aplicacao/logs/analise_*.txt
-
-# Buscar erros
-grep -i "error\|exception" aplicacao/logs/*.txt
-```
-
-### Estrutura do Log de Análise
-
-Cada análise gera um arquivo `analise_YYYYMMDD_HHMMSS.txt` contendo:
-- Timestamp
-- Nome do arquivo enviado
-- Texto extraído do PDF
-- Keywords encontradas
-- Score final
-- Dados estruturados extraídos
-
-### Logs do Gunicorn
-
-```bash
-# Se configurado para arquivo
 tail -f logs/gunicorn.log
 
-# Se usando stdout
-# Os logs aparecem no terminal onde o gunicorn foi iniciado
+# Buscar erros
+grep -i "error\|exception" logs/*.txt
+
+# Limpar logs antigos (>7 dias)
+find logs -name "*.txt" -mtime +7 -delete
+# ou: ./scripts/cleanup.sh
 ```
 
 ---
 
-## 4. Testes de Funcionamento
-
-### Health Check
+## 4. Verificação de Saúde
 
 ```bash
-curl -s http://localhost:5000/health | jq .
-```
-
-**Resposta esperada:**
-```json
-{
-  "status": "healthy",
-  "service": "leitura-ats-curriculo"
-}
-```
-
-### Teste de Upload via cURL
-
-Faça upload de um currículo em PDF:
-
-```bash
-curl -X POST http://localhost:5000/analyze \
-  -F "file=@seu-curriculo.pdf" \
-  | jq .
-```
-```
-
-### Teste Rápido com Script
-
-```bash
+# Via script
 ./scripts/health-check.sh
-```
 
-### Verificar API Disponível
+# Manual
+curl -s http://localhost:5000/health
+# {"status": "healthy", "service": "leitura-ats-curriculo"}
 
-```bash
-# Deve retornar página HTML
-curl -s http://localhost:5000 | head -20
+# Testar upload
+curl -X POST http://localhost:5000/analyze -F "file=@curriculo.pdf" | jq .
 ```
 
 ---
 
 ## 5. Manutenção
 
-### Limpar Logs Antigos
-
 ```bash
-# Remover logs com mais de 7 dias
-find aplicacao/logs -name "*.txt" -mtime +7 -delete
-
-# Ou usar script
-./scripts/cleanup.sh
-```
-
-### Limpar Cache Python
-
-```bash
-find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null
-find . -type f -name "*.pyc" -delete
-```
-
-### Atualizar Dependências
-
-```bash
+# Atualizar dependências
 source venv/bin/activate
 pip install --upgrade -r requirements.txt
-```
 
-### Verificar Uso de Disco
+# Limpar cache Python
+find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null
 
-```bash
-du -sh aplicacao/logs/
-du -sh venv/
-```
+# Verificar espaço em disco
+du -sh logs/ venv/
 
-### Reiniciar Após Mudança de Código
-
-```bash
-# Se usando Flask development server
-# O reload é automático (debug=True)
-
-# Se usando Gunicorn
-kill -HUP $(cat app.pid)  # Graceful reload
+# Graceful reload (Gunicorn)
+kill -HUP $(cat app.pid)
 ```
 
 ---
@@ -264,27 +140,8 @@ kill -HUP $(cat app.pid)  # Graceful reload
 | Problema | Verificar | Solução |
 |----------|-----------|---------|
 | App não inicia | `python -c "from app import app"` | Ver erros de import |
-| Porta ocupada | `lsof -i :5000` | Matar processo ou mudar porta |
-| Health falha | `curl localhost:5000/health` | Verificar logs da aplicação |
-| Upload falha | Logs de erro | Verificar tamanho do arquivo |
-| Container não sobe | `docker logs leitura-ats` | Verificar erro no log |
+| Porta ocupada | `lsof -i :5000` | `kill <PID>` |
+| Health falha | `curl localhost:5000/health` | Ver logs |
+| Container não sobe | `docker logs leitura-ats` | Ver erro no log |
 
-Para problemas mais detalhados, consulte [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
-
----
-
-## Comandos Úteis Resumidos
-
-```bash
-# Status rápido
-curl -s localhost:5000/health && echo " ✅ OK" || echo " ❌ FALHOU"
-
-# Ver processos Python
-ps aux | grep python
-
-# Ver containers Docker
-docker ps -a
-
-# Uso de memória do processo
-ps -o pid,rss,command -p $(pgrep -f "gunicorn")
-```
+Mais detalhes: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
