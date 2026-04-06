@@ -54,3 +54,15 @@ Thumbs.db
 # Arquivos de teste/rascunho
 *.docx
 *.bak
+
+# Ambientes virtuais Windows/Linux
+venv/
+env/
+ENV/
+.venv/
+
+# Arquivos temporários Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
