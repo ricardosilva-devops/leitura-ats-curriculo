@@ -1,0 +1,166 @@
+# =============================================================================
+# CI/CD Pipeline - Leitura ATS
+# =============================================================================
+# Este workflow executa:
+# - Lint do código Python
+# - Build da imagem Docker
+# - Teste de health check
+#
+# Triggers:
+# - Push para main
+# - Pull requests para main
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+  IMAGE_NAME: leitura-ats
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Lint e verificação de código
+  # ---------------------------------------------------------------------------
+  lint:
+    name: 🔍 Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Instalar dependências de lint
+        run: |
+          pip install --upgrade pip
+          pip install flake8
+      
+      - name: Verificar sintaxe Python
+        run: |
+          # Verificar erros de sintaxe e imports
+          flake8 aplicacao --count --select=E9,F63,F7,F82 --show-source --statistics
+      
+      - name: Verificar estilo (warnings)
+        run: |
+          # Verificar estilo, mas não falhar
+          flake8 aplicacao --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Build da imagem Docker
+  # ---------------------------------------------------------------------------
+  build:
+    name: 🐳 Docker Build
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build da imagem
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: imagem-aplicacao/Dockerfile
+          push: false
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Verificar imagem
+        run: |
+          docker images ${{ env.IMAGE_NAME }}:test
+          echo "✅ Imagem construída com sucesso!"
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Teste de funcionamento
+  # ---------------------------------------------------------------------------
+  test:
+    name: 🧪 Health Check
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build da imagem
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: imagem-aplicacao/Dockerfile
+          push: false
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:test
+          cache-from: type=gha
+      
+      - name: Iniciar container
+        run: |
+          docker run -d --name test-container -p 5000:5000 ${{ env.IMAGE_NAME }}:test
+          echo "⏳ Aguardando aplicação iniciar..."
+          sleep 10
+      
+      - name: Health check
+        run: |
+          # Verificar health endpoint
+          RESPONSE=$(curl -s http://localhost:5000/health)
+          echo "Response: $RESPONSE"
+          
+          if echo "$RESPONSE" | grep -q "healthy"; then
+            echo "✅ Health check passou!"
+          else
+            echo "❌ Health check falhou!"
+            docker logs test-container
+            exit 1
+          fi
+      
+      - name: Verificar página principal
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/)
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Página principal OK (HTTP 200)"
+          else
+            echo "❌ Página principal falhou (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+      
+      - name: Parar container
+        if: always()
+        run: docker rm -f test-container || true
+
+  # ---------------------------------------------------------------------------
+  # Job 4: Resumo
+  # ---------------------------------------------------------------------------
+  summary:
+    name: 📊 Resumo
+    runs-on: ubuntu-latest
+    needs: [lint, build, test]
+    if: always()
+    
+    steps:
+      - name: Verificar resultados
+        run: |
+          echo "## 📊 Resumo do Pipeline" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY

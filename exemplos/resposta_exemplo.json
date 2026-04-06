@@ -1,0 +1,87 @@
+{
+  "exemplo_resposta": {
+    "success": true,
+    "analysis": {
+      "final_score": 78,
+      "keyword_score": 82,
+      "structure_score": 75,
+      "readability_score": 76,
+      "keywords_found": [
+        "linux",
+        "ubuntu",
+        "centos",
+        "aws",
+        "docker",
+        "kubernetes",
+        "terraform",
+        "ansible",
+        "jenkins",
+        "gitlab",
+        "zabbix",
+        "prometheus",
+        "grafana",
+        "python",
+        "bash",
+        "mysql",
+        "postgresql",
+        "git"
+      ],
+      "sections_detected": [
+        "resumo",
+        "experiência",
+        "formação",
+        "habilidades",
+        "certificações",
+        "idiomas"
+      ],
+      "suggestions": [
+        "Considere adicionar mais projetos práticos",
+        "Quantifique mais resultados (ex: 'reduzi custos em X%')"
+      ]
+    },
+    "extracted_data": {
+      "name": "João da Silva Teste",
+      "email": "joao.teste@email.com",
+      "phone": "(11) 99999-9999",
+      "location": "São Paulo, SP",
+      "experiences": [
+        {
+          "title": "Analista de Infraestrutura Pleno",
+          "company": "Empresa Tecnologia Fictícia Ltda",
+          "period": "Jan/2022 - Presente",
+          "duration_months": 28
+        },
+        {
+          "title": "Analista de Suporte Jr",
+          "company": "Outra Empresa Fictícia S.A.",
+          "period": "Mar/2019 - Dez/2021",
+          "duration_months": 33
+        }
+      ],
+      "education": [
+        {
+          "degree": "Tecnólogo",
+          "field": "Análise e Desenvolvimento de Sistemas",
+          "institution": "Faculdade Fictícia de Tecnologia",
+          "year": "2019"
+        }
+      ],
+      "skills": [
+        "Linux",
+        "AWS",
+        "Docker",
+        "Kubernetes",
+        "Terraform",
+        "Ansible",
+        "Jenkins",
+        "Python",
+        "Bash"
+      ],
+      "certifications": [
+        "AWS Certified Cloud Practitioner",
+        "LPI Linux Essentials"
+      ]
+    }
+  },
+  "_nota": "Este é um exemplo de resposta JSON da API /analyze. Use para entender o formato de saída."
+}

@@ -1,136 +1,156 @@
 # 📄 Leitura ATS - Analisador de Currículos
 
-Aplicação web para análise de currículos em PDF, simulando a leitura de sistemas ATS (Applicant Tracking System).
+Aplicação web para análise de legibilidade de currículos em PDF, simulando como sistemas ATS (Applicant Tracking System) interpretam documentos.
 
-**Projeto de Portfólio** demonstrando: Python/Flask, Docker, Terraform e Kubernetes.
+> **Projeto de Portfólio** focado em infraestrutura: Python, Docker, com roadmap para Terraform e Kubernetes.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
 ![Flask](https://img.shields.io/badge/Flask-3.0-green?logo=flask)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)
-![Terraform](https://img.shields.io/badge/Terraform-AWS-purple?logo=terraform)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS-blue?logo=kubernetes)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
+---
+
+## 📋 Estado Atual (v0.1.0)
+
+**✅ Implementado e funcionando:**
+- Aplicação Flask para análise de PDF
+- Motor ATS com NLP (NLTK) em português
+- Interface web responsiva (drag-and-drop)
+- Docker com imagem otimizada
+- Scripts operacionais
+
+**🚧 Em desenvolvimento (roadmap):**
+- Terraform para AWS (código pronto, não deployado)
+- Kubernetes manifests (prontos, não deployados)
+- CI/CD com GitHub Actions
 
 ---
 
 ## 🎯 O que faz?
 
 1. **Upload de PDF** - Arraste ou selecione um currículo
-2. **Análise ATS** - Score de 0-100 baseado em:
+2. **Análise de Legibilidade** - Score heurístico de 0-100:
    - Keywords técnicas encontradas (40%)
    - Estrutura do documento (35%)
-   - Legibilidade (25%)
+   - Clareza do texto (25%)
 3. **Extração de Dados** - Nome, experiências, habilidades, certificações
-4. **Feedback** - Sugestões para melhorar o currículo
+4. **Feedback** - Sugestões para melhorar a estrutura
+
+> ⚠️ **Nota:** Esta é uma análise heurística para fins educacionais. Não é uma validação oficial de ATS do mercado.
 
 ---
 
 ## 🚀 Como Rodar
 
-### Opção 1: Local (Desenvolvimento)
+### Opção 1: Local (Recomendado)
 
 ```bash
-# Criar ambiente virtual
-python -m venv venv
-.\venv\Scripts\Activate.ps1  # Windows
-source venv/bin/activate      # Linux/Mac
+# Clonar repositório
+git clone https://github.com/ricardosilva-devops/leitura-ats-curriculo.git
+cd leitura-ats-curriculo
 
-# Instalar dependências
-pip install -r requirements.txt
+# Setup automático
+./scripts/setup.sh
 
-# Baixar dados NLTK
-python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab'); nltk.download('rslp')"
-
-# Rodar
-cd aplicacao
-python app.py
+# Iniciar aplicação
+./scripts/start.sh
 
 # Acessar: http://localhost:5000
+```
+
+**Ou manualmente:**
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# .\venv\Scripts\Activate.ps1  # Windows
+
+pip install -r requirements.txt
+python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab'); nltk.download('rslp')"
+
+cd aplicacao && python app.py
 ```
 
 ### Opção 2: Docker
 
 ```bash
-# Build da imagem
+# Build
+./scripts/build-docker.sh
+
+# Executar
+./scripts/run-docker.sh
+
+# Ou manualmente:
 docker build -t leitura-ats -f imagem-aplicacao/Dockerfile .
-
-# Rodar container
 docker run -p 5000:5000 leitura-ats
-
-# Acessar: http://localhost:5000
 ```
 
-### Opção 3: AWS (Kubernetes)
-
-Ver [DEPLOY.md](DEPLOY.md) para instruções completas de deploy na AWS.
-
-```bash
-# Resumo:
-cd infra/terraform && terraform apply  # Cria VPC, EKS, ECR, S3
-kubectl apply -f infra/kubernetes/     # Deploy da aplicação
-```
+📖 **Manual completo:** [docs/SETUP.md](docs/SETUP.md)
 
 ---
 
-## 📁 Estrutura
+## 📁 Estrutura do Projeto
 
 ```
 leitura-ats-curriculo/
-├── aplicacao/               # 🐍 Código Python
-│   ├── app.py               # Flask (API)
-│   ├── leitura_ats/         # Motor ATS (NLP)
-│   ├── extracao_pdf/        # Extração de PDF
-│   ├── templates/           # HTML
-│   └── static/              # CSS + JS
+├── aplicacao/               # 🐍 Aplicação Python
+│   ├── app.py               # Flask (API + rotas)
+│   ├── leitura_ats/         # Motor de análise ATS
+│   ├── extracao_pdf/        # Extração de texto (PyMuPDF)
+│   ├── templates/           # HTML (Jinja2)
+│   └── static/              # CSS + JavaScript
+│
+├── docs/                    # 📚 Documentação
+│   ├── SETUP.md             # Instalação
+│   ├── RUNBOOK.md           # Operação
+│   ├── ARQUITETURA.md       # Arquitetura atual
+│   ├── ROADMAP.md           # Próximos passos
+│   └── ...
+│
+├── scripts/                 # 🔧 Scripts operacionais
+│   ├── setup.sh             # Configuração inicial
+│   ├── start.sh             # Iniciar aplicação
+│   ├── build-docker.sh      # Build da imagem
+│   └── ...
 │
 ├── imagem-aplicacao/        # 🐳 Docker
-│   └── Dockerfile
+│   └── Dockerfile           # Multi-stage build
 │
-├── infra/                   # ☁️ Infraestrutura
+├── infra/                   # ☁️ Infraestrutura (roadmap)
 │   ├── terraform/           # AWS (VPC, EKS, ECR, S3)
 │   └── kubernetes/          # Manifests K8s
 │
-├── requirements.txt
-└── README.md
+└── exemplos/                # 📋 Exemplos de uso
 ```
-
----
-
-## 🏗️ Infraestrutura AWS
-
-O projeto inclui infraestrutura completa como código:
-
-| Recurso | Descrição |
-|---------|-----------|
-| **VPC** | Rede isolada com 3 AZs, subnets públicas/privadas |
-| **EKS** | Kubernetes gerenciado com auto-scaling |
-| **ECR** | Registry privado para imagens Docker |
-| **S3** | Armazenamento de currículos |
-| **CloudWatch** | Logs e métricas |
-
-**Custo estimado:** ~$170/mês (ambiente dev)
-
-Ver [ARQUITETURA.md](ARQUITETURA.md) para detalhes.
 
 ---
 
 ## 🛠️ Tecnologias
 
-**Backend:**
-- Python 3.12
-- Flask 3.0
-- Gunicorn (WSGI)
-- NLTK (NLP em Português)
-- PyMuPDF (extração de PDF)
+### Stack Atual (v0.1.0)
 
-**Infraestrutura:**
-- Docker (multi-stage build)
-- Terraform (IaC)
-- Kubernetes (EKS)
-- AWS (VPC, ECR, S3, CloudWatch)
+| Camada | Tecnologia | Função |
+|--------|------------|--------|
+| **Backend** | Python 3.12 | Linguagem principal |
+| | Flask 3.0 | Framework web |
+| | Gunicorn | Servidor WSGI |
+| | PyMuPDF | Extração de PDF |
+| | NLTK | NLP em português |
+| **Frontend** | HTML5/CSS3 | Interface |
+| | JavaScript | Interatividade |
+| **Container** | Docker | Empacotamento |
 
-**Frontend:**
-- HTML5 / CSS3
-- JavaScript (vanilla)
+### Roadmap de Infraestrutura
+
+| Tecnologia | Status | Descrição |
+|------------|--------|-----------|
+| Docker Compose | 🔜 Próximo | Orquestração local |
+| Nginx | 🔜 Próximo | Reverse proxy |
+| Terraform | 📝 Código pronto | IaC para AWS |
+| Kubernetes | 📝 Manifests prontos | Orquestração |
+| GitHub Actions | 🔜 Próximo | CI/CD |
+
+Ver [docs/ROADMAP.md](docs/ROADMAP.md) para detalhes.
 
 ---
 
@@ -145,7 +165,7 @@ curl -X POST http://localhost:5000/analyze \
   -F "file=@curriculo.pdf"
 ```
 
-**Response:**
+**Resposta:**
 ```json
 {
   "success": true,
@@ -167,19 +187,66 @@ curl -X POST http://localhost:5000/analyze \
 
 ### GET /health
 
-Health check.
+Health check para monitoramento.
 
 ```bash
 curl http://localhost:5000/health
-# {"status": "healthy"}
+# {"status": "healthy", "service": "leitura-ats-curriculo"}
 ```
+
+Ver exemplo completo: [exemplos/resposta_exemplo.json](exemplos/resposta_exemplo.json)
+
+---
+
+## 📚 Documentação
+
+| Documento | Descrição |
+|-----------|-----------|
+| [docs/SETUP.md](docs/SETUP.md) | Instalação completa |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Manual operacional |
+| [docs/ARQUITETURA.md](docs/ARQUITETURA.md) | Arquitetura atual |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Resolução de problemas |
+| [docs/DECISOES_TECNICAS.md](docs/DECISOES_TECNICAS.md) | Justificativas técnicas |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Próximas evoluções |
+| [docs/LIMITACOES.md](docs/LIMITACOES.md) | Limitações conhecidas |
+| [docs/SEGURANCA.md](docs/SEGURANCA.md) | Política de privacidade |
+
+---
+
+## ⚠️ Limitações
+
+- **Sem OCR:** PDF deve ter texto selecionável (não funciona com escaneados)
+- **Apenas PDF:** Não aceita .docx, .doc ou outros formatos
+- **Análise heurística:** Não é validação oficial de ATS
+- **Português apenas:** Otimizado para currículos em português
+
+Ver [docs/LIMITACOES.md](docs/LIMITACOES.md) para lista completa.
+
+---
+
+## 🤝 Contribuição
+
+1. Fork o repositório
+2. Crie uma branch (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
 
 ---
 
 ## 📝 Licença
 
-MIT License
+Este projeto está licenciado sob a [MIT License](LICENSE).
 
 ---
 
-**Desenvolvido por Ricardo da Silva Júnior**
+## 👤 Autor
+
+**Ricardo da Silva Júnior**
+
+- GitHub: [@ricardosilva-devops](https://github.com/ricardosilva-devops)
+- LinkedIn: [Ricardo da Silva Júnior](https://linkedin.com/in/ricardosilva-devops)
+
+---
+
+*Projeto de portfólio demonstrando habilidades em Python, Docker e infraestrutura.*
