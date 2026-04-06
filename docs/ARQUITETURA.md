@@ -22,7 +22,7 @@ Documentação da arquitetura real implementada no projeto.
 │  └─────────────┘       │       │         └────────────────┘  │   │
 │                        │       ▼                              │   │
 │                        │  ┌─────────┐                         │   │
-│                        │  │  Logs   │  aplicacao/logs/        │   │
+│                        │  │  Logs   │  logs/                  │   │
 │                        │  └─────────┘                         │   │
 │                        └─────────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────┘
@@ -76,7 +76,7 @@ PDF → Extração (PyMuPDF) → Texto → NLP (NLTK) → Scoring → JSON
 
 ### 4. Logs
 
-Cada análise gera um arquivo em `aplicacao/logs/`:
+Cada análise gera um arquivo em `logs/` (na raiz do projeto):
 ```
 analise_20260405_143052.txt
 ```
@@ -152,8 +152,9 @@ aplicacao/
 │   │   └── style.css
 │   └── js/
 │       └── main.js
-│
-└── logs/                     # Logs de análise (gitignored)
+
+# Na raiz do projeto:
+logs/                         # Logs de análise (gitignored)
 ```
 
 ---
@@ -230,9 +231,3 @@ Ver [LIMITACOES.md](LIMITACOES.md) para lista completa.
 ## Evolução Planejada
 
 Ver [ROADMAP.md](ROADMAP.md) para próximos passos.
-
-**Preview:**
-- Docker + Docker Compose
-- Nginx como reverse proxy
-- Supervisor para gerenciamento de processos
-- AWS EKS para produção

@@ -32,7 +32,6 @@ case $MODE in
     prod)
         echo -e "${GREEN}🚀 Iniciando em modo PRODUÇÃO (Gunicorn)...${NC}"
         echo "   URL: http://localhost:$PORT"
-        echo "   Workers: $(grep -oP 'workers\s*=\s*\K\d+' gunicorn_config.py 2>/dev/null || echo '2')"
         echo ""
         gunicorn --config gunicorn_config.py wsgi:app
         ;;

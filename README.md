@@ -2,7 +2,7 @@
 
 Aplicação web para análise de legibilidade de currículos em PDF, simulando como sistemas ATS (Applicant Tracking System) interpretam documentos.
 
-> **Projeto de Portfólio** — Backend Python com Docker, scripts operacionais e CI. Código de infraestrutura (Terraform/K8s) preparado, não deployado.
+> **Projeto de Portfólio** — Aplicação Python containerizada com operação documentada e CI básico.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
 ![Flask](https://img.shields.io/badge/Flask-3.0-green?logo=flask)
@@ -20,10 +20,9 @@ Aplicação web para análise de legibilidade de currículos em PDF, simulando c
 | ✅ Funcional | Interface web (drag-and-drop) |
 | ✅ Funcional | Docker (build + run) |
 | ✅ Funcional | CI (lint, build, health check) |
-| ✅ Funcional | Scripts operacionais |
-| 📝 Código pronto | Terraform, Kubernetes, Nginx, Supervisor |
+| ✅ Funcional | Scripts operacionais (start, stop, health) |
 
-> O projeto é pequeno por design. O roadmap existe para demonstrar conhecimento, não representa a versão atual.
+> Projeto focado em demonstrar empacotamento e operação de aplicação local.
 
 ---
 
@@ -71,7 +70,7 @@ leitura-ats-curriculo/
 ├── scripts/             # setup.sh, start.sh, stop.sh, health-check.sh
 ├── imagem-aplicacao/    # Dockerfile
 ├── docs/                # Documentação técnica
-├── infra/               # Terraform + Kubernetes (roadmap)
+├── logs/                # Logs de análise (gitignored)
 └── exemplos/            # Exemplo de resposta da API
 ```
 
