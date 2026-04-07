@@ -83,14 +83,6 @@ newAnalysisBtn.addEventListener('click', () => {
     resetInterface();
 });
 
-// Tabs
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        const tabId = tab.dataset.tab;
-        switchTab(tabId);
-    });
-});
-
 // =============================================================================
 // FUNÇÕES
 // =============================================================================
@@ -242,6 +234,29 @@ function displayKeywords(keywords) {
         return;
     }
     
+    // Contar keywords por importância
+    const counts = {critical: 0, high: 0, medium: 0};
+    keywords.forEach(kw => {
+        if (counts[kw.importance] !== undefined) counts[kw.importance]++;
+    });
+    
+    // Legenda de cores
+    const legend = document.createElement('div');
+    legend.className = 'keywords-legend';
+    legend.innerHTML = `
+        <span class="legend-item">
+            <span class="keyword-tag critical">●</span> Principal (${counts.critical})
+        </span>
+        <span class="legend-item">
+            <span class="keyword-tag high">●</span> Secundária (${counts.high})
+        </span>
+        <span class="legend-item">
+            <span class="keyword-tag medium">●</span> Contexto (${counts.medium})
+        </span>
+    `;
+    grid.appendChild(legend);
+    
+    // Tags de keywords
     keywords.forEach(kw => {
         const tag = document.createElement('span');
         tag.className = `keyword-tag ${kw.importance}`;
@@ -522,26 +537,12 @@ function displayExtractedData(data) {
 }
 
 /**
- * Troca de tab
- */
-function switchTab(tabId) {
-    // Remover active de todas as tabs
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
-    // Ativar tab selecionada
-    document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
-    document.getElementById(`tab-${tabId}`).classList.add('active');
-}
-
-/**
  * Reseta interface para nova análise
  */
 function resetInterface() {
     clearFileSelection();
     resultsSection.classList.add('hidden');
     uploadSection.classList.remove('hidden');
-    switchTab('keywords');
 }
 
 /**

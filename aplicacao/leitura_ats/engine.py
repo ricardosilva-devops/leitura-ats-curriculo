@@ -37,11 +37,17 @@ from unidecode import unidecode
 try:
     from .stopwords import STOPWORDS_PT
     from ..analise_keywords.synonyms import TECH_SYNONYMS, find_canonical_term
-    from ..analise_keywords.keywords import CRITICAL_KEYWORDS, SECTION_KEYWORDS, get_area_for_keywords
+    from ..analise_keywords.keywords import (
+        CRITICAL_KEYWORDS, KEYWORDS_CRITICAL, KEYWORDS_HIGH, KEYWORDS_MEDIUM,
+        SECTION_KEYWORDS, get_area_for_keywords, get_keyword_importance
+    )
 except ImportError:
     from leitura_ats.stopwords import STOPWORDS_PT
     from analise_keywords.synonyms import TECH_SYNONYMS, find_canonical_term
-    from analise_keywords.keywords import CRITICAL_KEYWORDS, SECTION_KEYWORDS, get_area_for_keywords
+    from analise_keywords.keywords import (
+        CRITICAL_KEYWORDS, KEYWORDS_CRITICAL, KEYWORDS_HIGH, KEYWORDS_MEDIUM,
+        SECTION_KEYWORDS, get_area_for_keywords, get_keyword_importance
+    )
 
 
 # Baixar recursos NLTK necessários (executar apenas uma vez)
@@ -309,6 +315,11 @@ class ATSEngine:
         """
         Encontra keywords técnicas no currículo.
         
+        Classifica em 3 níveis de importância:
+        - critical: Keywords principais (Linux, AWS, Docker, etc.)
+        - high: Keywords secundárias (logs, tuning, backup, etc.)
+        - medium: Keywords de contexto operacional (chamados, suporte, etc.)
+        
         Returns:
             Tuple de (keywords encontradas, keywords críticas encontradas)
         """
@@ -317,7 +328,8 @@ class ATSEngine:
         seen = set()
         
         # Termos que precisam de match exato (muito curtos ou ambíguos)
-        exact_match_terms = {'go', 'sh', 'py', 'ha', 'dr', 'ad', 'dd', 'tf'}
+        # Removido 'go' pois causa muitos falsos positivos
+        exact_match_terms = {'sh', 'py', 'ha', 'dr', 'ad', 'dd', 'tf', 'n2', 'n3', 'ci', 'cd'}
         
         def term_exists(term: str) -> bool:
             """Verifica se termo existe no texto, respeitando boundaries."""
@@ -335,30 +347,41 @@ class ATSEngine:
                 if term_exists(term) and term not in seen:
                     seen.add(term)
                     seen.add(canonical)  # Marcar canônico também
-                    is_critical = canonical in CRITICAL_KEYWORDS or term in CRITICAL_KEYWORDS
+                    
+                    # Usar nova função de classificação
+                    importance = get_keyword_importance(canonical)
                     
                     keywords_found.append(KeywordMatch(
                         keyword=canonical,
                         found_as=term,
                         match_type="exact" if term == canonical else "synonym",
-                        importance="critical" if is_critical else "medium"
+                        importance=importance
                     ))
                     
-                    if is_critical:
+                    if importance == "critical":
                         keywords_critical.append(canonical)
                     break
         
-        # Buscar keywords críticas diretamente
-        for kw in CRITICAL_KEYWORDS:
+        # Buscar keywords críticas diretamente (3 níveis)
+        all_keywords = KEYWORDS_CRITICAL | KEYWORDS_HIGH | KEYWORDS_MEDIUM
+        for kw in all_keywords:
             if kw not in seen and term_exists(kw):
                 seen.add(kw)
+                importance = get_keyword_importance(kw)
+                
                 keywords_found.append(KeywordMatch(
                     keyword=kw,
                     found_as=kw,
                     match_type="exact",
-                    importance="critical"
+                    importance=importance
                 ))
-                keywords_critical.append(kw)
+                
+                if importance == "critical":
+                    keywords_critical.append(kw)
+        
+        # Ordenar por importância (critical > high > medium)
+        importance_order = {"critical": 0, "high": 1, "medium": 2}
+        keywords_found.sort(key=lambda k: importance_order.get(k.importance, 3))
         
         return keywords_found, list(set(keywords_critical))
     
@@ -376,6 +399,9 @@ class ATSEngine:
         
         essential_sections = ["dados_pessoais", "experiencia", "formacao", "habilidades"]
         
+        # Normalizar texto removendo acentos para busca mais robusta
+        text_normalized = unidecode(text_lower)
+        
         # Verificar se há dados de contato (email/telefone) mesmo sem título "Dados Pessoais"
         has_contact_data = bool(
             re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text_lower) or  # email
@@ -383,7 +409,11 @@ class ATSEngine:
         )
         
         for section_key, patterns in SECTION_KEYWORDS.items():
-            detected = any(pattern in text_lower for pattern in patterns)
+            # Verificar em ambos: texto original e normalizado
+            detected = any(
+                pattern in text_lower or unidecode(pattern) in text_normalized 
+                for pattern in patterns
+            )
             
             # Para dados_pessoais, considerar presente se houver email/telefone
             if section_key == "dados_pessoais" and not detected and has_contact_data:

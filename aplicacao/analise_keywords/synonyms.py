@@ -176,8 +176,8 @@ TECH_SYNONYMS = {
     "powershell": [
         "ps1", "pwsh", "powershell script", "windows powershell"
     ],
-    "go": [
-        "golang", "go lang", "linguagem go"
+    "golang": [
+        "go lang", "linguagem go", "go programming"
     ],
     "javascript": [
         "js", "node", "nodejs", "node.js", "ecmascript"

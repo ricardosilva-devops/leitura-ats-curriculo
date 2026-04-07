@@ -18,7 +18,7 @@ echo ""
 
 # Logs antigos (mais de 7 dias)
 echo "📋 Removendo logs antigos..."
-LOGS_REMOVED=$(find aplicacao/logs -name "*.txt" -mtime +7 -delete -print 2>/dev/null | wc -l || echo "0")
+LOGS_REMOVED=$(find logs -name "*.txt" -mtime +7 -delete -print 2>/dev/null | wc -l || echo "0")
 echo -e "  ${GREEN}✓${NC} $LOGS_REMOVED arquivos de log removidos"
 
 # Cache Python
@@ -37,8 +37,8 @@ fi
 # Relatório
 echo ""
 echo "📊 Uso de disco:"
-echo "  aplicacao/logs: $(du -sh aplicacao/logs 2>/dev/null | cut -f1 || echo '0K')"
-echo "  venv:           $(du -sh venv 2>/dev/null | cut -f1 || echo '0K')"
+echo "  logs: $(du -sh logs 2>/dev/null | cut -f1 || echo '0K')"
+echo "  venv: $(du -sh venv 2>/dev/null | cut -f1 || echo '0K')"
 
 echo ""
 echo -e "${GREEN}✅ Limpeza concluída!${NC}"

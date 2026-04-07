@@ -28,7 +28,7 @@ Política de tratamento de dados sensíveis no projeto Leitura ATS.
 
 ### 2. Logs de Análise
 
-**Atenção:** O sistema gera logs detalhados em `aplicacao/logs/`.
+**Atenção:** O sistema gera logs detalhados em `logs/` (na raiz do projeto).
 
 Esses logs **podem conter**:
 - Texto extraído do currículo
@@ -92,7 +92,7 @@ Quando o projeto for para produção:
 ### Limpar Logs Manualmente
 
 ```bash
-rm -rf aplicacao/logs/*
+rm -rf logs/*
 ```
 
 ### Script de Limpeza
@@ -105,7 +105,7 @@ rm -rf aplicacao/logs/*
 
 ```bash
 # Remover logs com mais de 7 dias
-0 0 * * * find /path/to/aplicacao/logs -name "*.txt" -mtime +7 -delete
+0 0 * * * find /path/to/projeto/logs -name "*.txt" -mtime +7 -delete
 ```
 
 ---

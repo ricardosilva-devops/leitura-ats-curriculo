@@ -3,76 +3,91 @@ Keywords críticas e padrões de seções para análise ATS.
 
 Define palavras-chave técnicas importantes e padrões
 para identificar seções em currículos.
+
+Baseado em estudo de keywords para perfil de Infraestrutura/DevOps.
 """
 
 # =============================================================================
-# KEYWORDS CRÍTICAS (Alta importância na análise)
+# KEYWORDS POR NÍVEL DE IMPORTÂNCIA
 # =============================================================================
 
-CRITICAL_KEYWORDS = {
+# ALTA PRIORIDADE (Critical) - Keywords principais que definem o perfil
+KEYWORDS_CRITICAL = {
     # Sistemas Operacionais
-    "linux", "ubuntu", "centos", "debian", "rhel", "red hat",
-    "windows server", "unix", "freebsd",
+    "linux", "centos", "ubuntu", "rocky linux", "debian", "rhel",
     
-    # Cloud
-    "aws", "azure", "gcp", "google cloud", "ec2", "s3", "vpc",
-    "lambda", "cloudformation", "ecs", "eks", "rds", "dynamodb",
-    "cloudwatch", "iam", "route53", "cloudfront",
+    # Cloud AWS
+    "aws", "ec2", "s3", "glacier", "vpc",
     
-    # Containers e Orquestração
-    "docker", "kubernetes", "k8s", "openshift", "rancher",
-    "helm", "containerd", "podman", "docker compose",
-    
-    # IaC e Automação
-    "terraform", "ansible", "puppet", "chef", "saltstack",
-    "cloudformation", "pulumi", "vagrant",
-    
-    # CI/CD
-    "jenkins", "gitlab", "github actions", "bitbucket pipelines",
-    "circleci", "travis", "argocd", "spinnaker",
-    
-    # Monitoramento e Observabilidade
-    "zabbix", "prometheus", "grafana", "datadog", "new relic",
-    "nagios", "elk", "elasticsearch", "logstash", "kibana",
-    "splunk", "dynatrace", "jaeger", "opentelemetry",
-    
-    # Redes e Segurança
-    "tcp/ip", "dns", "vpn", "firewall", "nginx", "apache",
-    "haproxy", "load balancer", "ssl", "tls", "iptables",
-    "waf", "cloudflare",
+    # Containers e Web Stack
+    "docker", "nginx", "gunicorn", "supervisor", "apache",
     
     # Banco de Dados
-    "postgresql", "mysql", "mariadb", "mongodb", "redis",
-    "oracle", "sql server", "cassandra", "dynamodb",
+    "postgresql", "mysql",
     
-    # Linguagens e Scripting
-    "python", "bash", "shell", "powershell", "go", "golang",
-    "ruby", "perl", "groovy",
+    # Monitoramento
+    "zabbix", "prometheus", "grafana",
     
-    # Versionamento e Colaboração
-    "git", "github", "gitlab", "bitbucket", "svn",
+    # Scripting e Automação
+    "shell script", "bash", "automação", "python",
     
-    # Metodologias e Práticas
-    "devops", "sre", "gitops", "infrastructure as code",
-    "ci/cd", "pipeline", "agile", "scrum", "kanban",
+    # Versionamento
+    "git", "bitbucket", "gitlab", "github",
     
-    # Virtualização
-    "vmware", "vsphere", "hyper-v", "kvm", "proxmox", "xen",
+    # Redes
+    "tcp/ip", "dns", "vpn", "openvpn", "firewall",
     
-    # Storage e Backup
-    "storage", "san", "nas", "nfs", "ceph", "minio",
-    "backup", "veeam", "bacula", "rsync",
+    # Conceitos Core
+    "troubleshooting", "migração", "observabilidade", "rca",
+    "sustentação", "infraestrutura",
     
-    # Mensageria
-    "kafka", "rabbitmq", "sqs", "sns", "activemq",
-    
-    # Ferramentas de Desenvolvimento
-    "api", "rest", "graphql", "microservices", "serverless",
-    
-    # Certificações (abreviações técnicas)
-    "aws certified", "cka", "ckad", "lpic", "rhcsa", "rhce",
-    "azure certified", "gcp certified",
+    # IaC (se aplicável)
+    "terraform", "ansible", "kubernetes", "k8s",
 }
+
+# MÉDIA PRIORIDADE (High) - Keywords secundárias importantes
+KEYWORDS_HIGH = {
+    # Ferramentas e conceitos secundários
+    "logs", "tuning", "backup", "recovery", "restore",
+    "documentação", "padronização", "disponibilidade",
+    "estabilidade", "crontab", "sla",
+    
+    # Ferramentas específicas
+    "rclone", "cups", "samba",
+    
+    # Redes secundárias
+    "dhcp", "vlan", "traceroute", "gateway", "roteamento",
+    "latência", "conectividade",
+    
+    # Monitoramento secundário
+    "alertas", "dashboards", "monitoramento",
+    
+    # Cloud secundário
+    "cloudwatch", "iam", "route53",
+    
+    # Containers secundário
+    "docker-compose", "dockerfile", "containerd",
+}
+
+# BAIXA PRIORIDADE (Medium) - Keywords de contexto operacional
+KEYWORDS_MEDIUM = {
+    # Contexto operacional
+    "chamados", "incidentes", "tickets", "suporte",
+    "n2", "n3", "escalonamento",
+    
+    # Ferramentas de suporte
+    "glpi", "acesso remoto", "anydesk", "teamviewer", "putty",
+    
+    # Contexto de trabalho
+    "operação 24/7", "plantão", "on-call",
+    "tratativa de incidentes", "análise de causa",
+    
+    # Sistemas secundários
+    "windows", "windows server", "active directory",
+}
+
+# Combinar todas para compatibilidade com código existente
+CRITICAL_KEYWORDS = KEYWORDS_CRITICAL | KEYWORDS_HIGH
 
 
 # =============================================================================
@@ -104,9 +119,11 @@ SECTION_KEYWORDS = {
         "graduação", "pós-graduação", "formação:"
     ],
     "habilidades": [
-        "habilidades técnicas", "habilidades:", "competências técnicas",
+        "habilidades técnicas", "habilidades tecnicas", "habilidades:",
+        "competências técnicas", "competencias tecnicas",
         "technical skills", "hard skills", "conhecimentos técnicos",
-        "tecnologias:", "skills:"
+        "conhecimentos tecnicos", "tecnologias:", "skills:",
+        "stack técnica", "stack tecnica", "ferramentas e tecnologias"
     ],
     "idiomas": [
         "idiomas:", "línguas:", "languages:", "proficiência linguística"
@@ -144,39 +161,58 @@ AREA_KEYWORDS = {
         "linux", "servidor", "server", "infraestrutura", "infra",
         "datacenter", "virtualização", "vmware", "hypervisor",
         "storage", "rede", "network", "firewall", "vpn",
-        "backup", "disaster recovery", "alta disponibilidade"
+        "backup", "disaster recovery", "alta disponibilidade",
+        "sustentação", "troubleshooting"
     ],
     "cloud": [
         "aws", "azure", "gcp", "cloud", "ec2", "s3", "lambda",
         "serverless", "iaas", "paas", "saas", "multi-cloud",
-        "cloud native", "migration"
+        "cloud native", "migration", "glacier", "vpc"
     ],
     "devops": [
         "devops", "ci/cd", "pipeline", "jenkins", "gitlab ci",
         "github actions", "docker", "kubernetes", "k8s",
         "terraform", "ansible", "automation", "gitops"
     ],
-    "sre": [
-        "sre", "site reliability", "observability", "monitoring",
-        "alerting", "incident", "on-call", "slo", "sli",
-        "postmortem", "chaos engineering"
-    ],
-    "desenvolvimento": [
-        "python", "java", "javascript", "golang", "node",
-        "api", "rest", "microservices", "backend", "frontend",
-        "full stack", "software engineer"
+    "monitoramento": [
+        "zabbix", "prometheus", "grafana", "datadog", "new relic",
+        "nagios", "elk", "elasticsearch", "observabilidade",
+        "alertas", "dashboards", "monitoramento", "logs"
     ],
     "banco_dados": [
-        "postgresql", "mysql", "mongodb", "redis", "oracle",
-        "sql server", "dba", "database", "sql", "nosql",
+        "postgresql", "mysql", "mariadb", "mongodb", "redis",
+        "oracle", "sql server", "dba", "database", "sql", "nosql",
         "replicação", "backup", "tuning"
     ],
-    "seguranca": [
-        "security", "segurança", "pentest", "vulnerability",
-        "firewall", "waf", "siem", "compliance", "gdpr",
-        "lgpd", "iso 27001", "cybersecurity"
+    "redes": [
+        "tcp/ip", "dns", "dhcp", "vpn", "firewall", "vlan",
+        "roteamento", "gateway", "latência", "conectividade",
+        "openvpn", "iptables"
+    ],
+    "scripting": [
+        "bash", "shell script", "python", "powershell",
+        "automação", "scripts", "crontab"
     ],
 }
+
+
+def get_keyword_importance(keyword: str) -> str:
+    """
+    Retorna o nível de importância de uma keyword.
+    
+    Returns:
+        "critical", "high", ou "medium"
+    """
+    kw_lower = keyword.lower()
+    
+    if kw_lower in KEYWORDS_CRITICAL:
+        return "critical"
+    elif kw_lower in KEYWORDS_HIGH:
+        return "high"
+    elif kw_lower in KEYWORDS_MEDIUM:
+        return "medium"
+    else:
+        return "medium"  # Default
 
 
 def get_area_for_keywords(keywords: list) -> dict:
