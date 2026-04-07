@@ -211,9 +211,11 @@ logs/                         # Logs de análise (gitignored)
 
 | Ambiente | `FLASK_ENV` | DEBUG | LOG_DETAILED |
 |----------|-------------|-------|--------------|
-| Development | development | True | False |
+| Development | development | True | True |
 | Production | production | False | False |
-| Testing | testing | True | True |
+| Testing | testing | True | False |
+
+> **LOG_DETAILED** é `True` em Development para facilitar debugging, mas `False` em Production e Testing para proteger privacidade.
 
 ### Variáveis de Ambiente
 
@@ -221,9 +223,11 @@ logs/                         # Logs de análise (gitignored)
 |----------|-----------|---------|
 | `FLASK_ENV` ou `APP_ENV` | Ambiente de execução | development |
 | `SECRET_KEY` | Chave secreta Flask | dev-key (mude em prod!) |
-| `LOG_DETAILED` | Logar texto completo do currículo | false |
+| `LOG_DETAILED` | Sobrescreve config para logar texto completo | (usa config do ambiente) |
 | `LOG_LEVEL` | Nível de log | INFO |
 | `GUNICORN_WORKERS` | Número de workers | auto (CPUs * 2 + 1) |
+
+> **Nota:** `LOG_DETAILED` é definido no `config.py` por ambiente, mas pode ser sobrescrito via variável de ambiente se necessário.
 
 ### Gunicorn (gunicorn_config.py)
 

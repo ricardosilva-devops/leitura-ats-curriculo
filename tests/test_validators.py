@@ -24,17 +24,17 @@ class TestExtensionValidation:
     
     def test_pdf_extension_allowed(self, validator):
         """Extensão .pdf deve ser permitida."""
-        assert validator._is_allowed_extension('document.pdf')
-        assert validator._is_allowed_extension('DOCUMENT.PDF')
-        assert validator._is_allowed_extension('my.file.pdf')
+        assert validator._has_valid_extension('document.pdf')
+        assert validator._has_valid_extension('DOCUMENT.PDF')
+        assert validator._has_valid_extension('my.file.pdf')
     
     def test_non_pdf_extension_rejected(self, validator):
         """Outras extensões devem ser rejeitadas."""
-        assert not validator._is_allowed_extension('document.txt')
-        assert not validator._is_allowed_extension('document.doc')
-        assert not validator._is_allowed_extension('document.docx')
-        assert not validator._is_allowed_extension('image.png')
-        assert not validator._is_allowed_extension('script.py')
+        assert not validator._has_valid_extension('document.txt')
+        assert not validator._has_valid_extension('document.doc')
+        assert not validator._has_valid_extension('document.docx')
+        assert not validator._has_valid_extension('image.png')
+        assert not validator._has_valid_extension('script.py')
 
 
 class TestMagicBytes:
@@ -61,14 +61,14 @@ class TestMagicBytes:
         assert not validator._has_valid_magic_bytes(empty_stream)
     
     def test_stream_position_restored(self, validator):
-        """Posição do stream deve ser restaurada após verificação."""
+        """Posição do stream deve ser restaurada para início após verificação."""
         content = b'%PDF-1.4 content here'
         file_stream = io.BytesIO(content)
         file_stream.seek(10)  # Mover posição
         
         validator._has_valid_magic_bytes(file_stream)
         
-        assert file_stream.tell() == 0  # Deve voltar ao início
+        assert file_stream.tell() == 0  # Deve voltar ao início para leitura posterior
 
 
 class TestFilenameSanitization:

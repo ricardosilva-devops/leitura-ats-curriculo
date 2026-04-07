@@ -111,25 +111,31 @@ class UploadValidator:
             return False
         return file.content_type.lower() in self.ALLOWED_MIME_TYPES
     
-    def _has_valid_magic_bytes(self, file: FileStorage) -> bool:
+    def _has_valid_magic_bytes(self, file) -> bool:
         """
         Verifica assinatura real do arquivo (magic bytes).
         
         PDF começa com '%PDF' (0x25 0x50 0x44 0x46)
+        
+        Args:
+            file: FileStorage ou stream com interface de arquivo (BytesIO, etc)
         """
+        # Determinar o stream (FileStorage tem .stream, BytesIO é o próprio)
+        stream = getattr(file, 'stream', file)
+        
         # Salvar posição atual
-        current_pos = file.stream.tell()
+        current_pos = stream.tell()
         
         try:
             # Ir para início e ler primeiros bytes
-            file.stream.seek(0)
-            header = file.stream.read(4)
+            stream.seek(0)
+            header = stream.read(4)
             
             # Verificar assinatura PDF
             return header == self.PDF_MAGIC
         finally:
-            # Restaurar posição original
-            file.stream.seek(current_pos)
+            # Restaurar posição para início (mais seguro para processamento posterior)
+            stream.seek(0)
     
     @staticmethod
     def sanitize_filename(filename: str) -> str:

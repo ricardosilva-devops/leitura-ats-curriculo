@@ -46,6 +46,9 @@ def create_app(config_class=None):
     # Configurar logging
     _configure_logging(app)
     
+    # Inicializar logger de análises com config da app
+    _init_analysis_logger(app)
+    
     # Registrar rotas
     _register_routes(app)
     
@@ -101,12 +104,18 @@ def _register_security_headers(app):
 pdf_extractor = PDFExtractor()
 ats_engine = ATSEngine()
 
-# Logger de análises com controle de privacidade
+# Logger de análises - será inicializado com config da app
 LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
-analysis_logger = AnalysisLogger(
-    log_dir=LOG_DIR,
-    detailed=os.environ.get('LOG_DETAILED', 'false').lower() == 'true'
-)
+analysis_logger = None  # Inicializado em create_app()
+
+
+def _init_analysis_logger(app):
+    """Inicializa logger de análises com configuração da app."""
+    global analysis_logger
+    analysis_logger = AnalysisLogger(
+        log_dir=LOG_DIR,
+        detailed=app.config.get('LOG_DETAILED', False)
+    )
 
 
 # =============================================================================
