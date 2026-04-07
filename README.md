@@ -37,6 +37,53 @@ Aplicação web para análise heurística de currículos técnicos em PDF, com f
 
 ---
 
+## 🚀 Início Rápido
+
+### 1️⃣ Primeira vez - Setup Completo
+
+```bash
+git clone https://github.com/ricardosilva-devops/leitura-ats-curriculo.git
+cd leitura-ats-curriculo
+bash scripts/setup.sh
+```
+
+Acesse: **http://localhost:5000**
+
+### 2️⃣ Atualizar e Reiniciar
+
+```bash
+cd E:\leitura-ats-curriculo
+
+# Baixar atualizações
+git pull origin main
+
+# Atualizar dependências
+pip install -r requirements.txt --upgrade
+
+# Reiniciar
+bash scripts/start.sh
+```
+
+### 3️⃣ Comandos Úteis
+
+```bash
+# Verificar saúde da aplicação
+curl http://localhost:5000/health
+
+# Ver logs
+ls -lt logs/ | head -5
+
+# Parar aplicação
+Ctrl+C  # ou bash scripts/stop.sh
+
+# Rodar testes
+pytest tests/ -v
+```
+
+📖 **[GUIA_OPERACAO.md](GUIA_OPERACAO.md)** — Guia completo de operação passo a passo
+
+---
+
 ## 🚀 Como Rodar
 
 **Ambiente:** Linux ou WSL. Scripts escritos para bash.
