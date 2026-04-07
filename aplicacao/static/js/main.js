@@ -202,6 +202,11 @@ function displayResults(data) {
     displayFeedback('suggestions', analysis.suggestions);
     displayFeedback('positives', analysis.positives);
     
+    // Checklist ATS (novo)
+    if (analysis.ats_checklist) {
+        displayATSChecklist(analysis.ats_checklist, analysis);
+    }
+    
     // Extração
     displayExtraction(extraction, analysis);
     
@@ -390,6 +395,98 @@ function displayFeedback(sectionId, items) {
         div.textContent = item;
         list.appendChild(div);
     });
+}
+
+/**
+ * Exibe checklist de compatibilidade ATS
+ */
+function displayATSChecklist(checklist, analysis) {
+    const container = document.getElementById('checklistContent');
+    if (!container) return;
+    
+    if (!checklist || checklist.length === 0) {
+        container.innerHTML = '<p class="no-data">Checklist não disponível</p>';
+        return;
+    }
+    
+    // Agrupar por categoria
+    const categories = {
+        estrutura: { label: 'Estrutura', icon: '📐', items: [] },
+        conteudo: { label: 'Conteúdo', icon: '📝', items: [] },
+        formatacao: { label: 'Formatação', icon: '🎨', items: [] },
+        keywords: { label: 'Keywords', icon: '🔑', items: [] }
+    };
+    
+    checklist.forEach(item => {
+        if (categories[item.category]) {
+            categories[item.category].items.push(item);
+        }
+    });
+    
+    // Contar aprovados e total
+    const total = checklist.length;
+    const passed = checklist.filter(c => c.passed).length;
+    const percentage = Math.round((passed / total) * 100);
+    
+    let html = `
+        <div class="checklist-summary">
+            <div class="checklist-score">
+                <span class="checklist-passed">${passed}</span>/<span class="checklist-total">${total}</span>
+            </div>
+            <div class="checklist-percentage ${percentage >= 80 ? 'good' : percentage >= 60 ? 'warning' : 'bad'}">
+                ${percentage}% compatível
+            </div>
+        </div>
+        <div class="checklist-metrics">
+            <span class="metric-item">
+                <span class="metric-icon">📊</span>
+                <span class="metric-value">${analysis.metrics_found || 0}</span>
+                <span class="metric-label">métricas</span>
+            </span>
+            <span class="metric-item">
+                <span class="metric-icon">💪</span>
+                <span class="metric-value">${analysis.action_verbs_found || 0}</span>
+                <span class="metric-label">verbos de ação</span>
+            </span>
+            <span class="metric-item">
+                <span class="metric-icon">${analysis.date_format_valid ? '✓' : '✗'}</span>
+                <span class="metric-label">formato de datas</span>
+            </span>
+        </div>
+        <div class="checklist-grid">
+    `;
+    
+    // Renderizar cada categoria
+    Object.values(categories).forEach(category => {
+        if (category.items.length === 0) return;
+        
+        html += `
+            <div class="checklist-category">
+                <h4>${category.icon} ${category.label}</h4>
+                <ul class="checklist-items">
+        `;
+        
+        category.items.forEach(item => {
+            const statusIcon = item.passed ? '✓' : '✗';
+            const statusClass = item.passed ? 'passed' : `failed severity-${item.severity}`;
+            
+            html += `
+                <li class="checklist-item ${statusClass}">
+                    <span class="check-icon">${statusIcon}</span>
+                    <span class="check-text">${item.item}</span>
+                    ${!item.passed && item.suggestion ? `<span class="check-suggestion">${item.suggestion}</span>` : ''}
+                </li>
+            `;
+        });
+        
+        html += `
+                </ul>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 /**

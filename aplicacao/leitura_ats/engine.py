@@ -92,6 +92,16 @@ class SectionAnalysis:
 
 
 @dataclass
+class ATSChecklistItem:
+    """Item do checklist de compatibilidade ATS."""
+    item: str
+    passed: bool
+    category: str  # "estrutura", "conteudo", "formatacao", "keywords"
+    severity: str = "info"  # "critical", "warning", "info"
+    suggestion: str = ""
+
+
+@dataclass
 class ExperienceItem:
     """Item de experiência profissional extraído."""
     company: str
@@ -163,10 +173,18 @@ class ATSAnalysisResult:
     suggestions: List[str]
     positives: List[str]
     
+    # Checklist ATS (novo)
+    ats_checklist: List[ATSChecklistItem] = field(default_factory=list)
+    
+    # Métricas de conteúdo (novo)
+    metrics_found: int = 0  # Quantidade de números/métricas encontradas
+    action_verbs_found: int = 0  # Quantidade de verbos de ação
+    date_format_valid: bool = True  # Formato de datas válido (MM/AAAA)
+    
     # Metadados
-    total_words: int
-    unique_keywords: int
-    processing_time_ms: int
+    total_words: int = 0
+    unique_keywords: int = 0
+    processing_time_ms: int = 0
     
     # Campo opcional (deve vir por último)
     extracted_data: Optional[ExtractedData] = None
@@ -219,28 +237,45 @@ class ATSEngine:
         # 3. Extrair dados de contato
         contact_info = self._extract_contact_info(resume_text)
         
-        # 4. Extrair dados estruturados (novo)
+        # 4. Extrair dados estruturados
         extracted_data = self._extract_structured_data(resume_text, keywords_found)
         
-        # 5. Calcular scores
+        # 5. Analisar métricas de conteúdo (novo)
+        metrics_found = self._count_metrics(resume_text)
+        action_verbs = self._count_action_verbs(resume_text)
+        date_format_valid = self._validate_date_formats(resume_text)
+        
+        # 6. Gerar checklist ATS (novo)
+        ats_checklist = self._generate_ats_checklist(
+            resume_text, sections_detected, sections_missing,
+            contact_info, keywords_found, metrics_found, date_format_valid
+        )
+        
+        # 7. Calcular scores
         keyword_score = self._calculate_keyword_score(keywords_found, keywords_critical)
         structure_score = self._calculate_structure_score(sections_detected, sections_missing)
         readability_score = self._calculate_readability_score(resume_text, tokens)
+        
+        # Bônus por métricas e verbos de ação
+        content_bonus = min((metrics_found * 2) + (action_verbs // 3), 10)
         
         # Score final ponderado
         final_score = int(
             (keyword_score * 0.40) +
             (structure_score * 0.35) +
-            (readability_score * 0.25)
+            (readability_score * 0.25) +
+            content_bonus
         )
+        final_score = min(100, final_score)
         
-        # 6. Gerar alertas e sugestões
+        # 8. Gerar alertas e sugestões
         warnings, suggestions, positives = self._generate_feedback(
             keywords_found, sections_detected, sections_missing,
-            contact_info, len(tokens), keywords_critical
+            contact_info, len(tokens), keywords_critical,
+            metrics_found, action_verbs, date_format_valid
         )
         
-        # 7. Classificação
+        # 9. Classificação
         match_level, recommendation = self._get_classification(final_score)
         
         processing_time = int((time.time() - start_time) * 1000)
@@ -262,6 +297,10 @@ class ATSEngine:
             warnings=warnings,
             suggestions=suggestions,
             positives=positives,
+            ats_checklist=ats_checklist,
+            metrics_found=metrics_found,
+            action_verbs_found=action_verbs,
+            date_format_valid=date_format_valid,
             total_words=len(tokens),
             unique_keywords=len(set(k.keyword for k in keywords_found)),
             processing_time_ms=processing_time
@@ -533,6 +572,235 @@ class ATSEngine:
         
         return max(0, min(100, score))
     
+    def _count_metrics(self, text: str) -> int:
+        """
+        Conta métricas quantitativas no currículo.
+        
+        Métricas (números + indicadores) são importantes para ATS pois
+        demonstram resultados tangíveis. Ex: "reduzi 30%", "100 usuários"
+        """
+        metrics = 0
+        
+        # Padrões de métricas
+        patterns = [
+            r'\d+\s*%',  # Percentuais: 30%, 100%
+            r'\d+\s*(?:horas?|dias?|meses?|anos?)',  # Tempo: 5 horas, 2 anos
+            r'R\$\s*[\d\.,]+',  # Valores em reais
+            r'\$\s*[\d\.,]+',  # Valores em dólar
+            r'\d+\s*(?:usuários?|clientes?|chamados?|tickets?)',  # Volumes
+            r'(?:reduzi|aumentei|melhorei|otimizei)[^.]*\d+',  # Verbos de resultado + número
+            r'\d+\s*x\s*(?:mais|maior|menor)',  # Multiplicadores: 3x mais
+            r'(?:top|primeiro|segundo|terceiro)\s*\d*',  # Rankings
+            r'\d{1,3}(?:\.\d{3})*\s*(?:processos?|transações?|registros?)',  # Grandes números
+        ]
+        
+        for pattern in patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            metrics += len(matches)
+        
+        return metrics
+    
+    def _count_action_verbs(self, text: str) -> int:
+        """
+        Conta verbos de ação no currículo.
+        
+        Verbos de ação no início de bullets demonstram proatividade
+        e são bem vistos por ATS e recrutadores.
+        """
+        # Lista de verbos de ação em português (primeira pessoa passado)
+        action_verbs = [
+            'implementei', 'desenvolvi', 'criei', 'gerenciei', 'coordenei',
+            'liderei', 'otimizei', 'automatizei', 'reduzi', 'aumentei',
+            'melhorei', 'projetei', 'configurei', 'administrei', 'mantive',
+            'integrei', 'migrei', 'implantei', 'padronizei', 'documentei',
+            'analisei', 'monitorei', 'resolvi', 'diagnostiquei', 'suportei',
+            'treinei', 'capacitei', 'elaborei', 'planejei', 'executei',
+            'conduzi', 'estruturei', 'organizei', 'reestruturei', 'modernizei',
+            'participei', 'contribuí', 'atuei', 'colaborei', 'trabalhei',
+            # Infinitivos (menos impactantes mas ainda contam)
+            'desenvolver', 'implementar', 'gerenciar', 'administrar', 'criar',
+            'otimizar', 'automatizar', 'integrar', 'configurar', 'monitorar'
+        ]
+        
+        text_lower = text.lower()
+        count = 0
+        
+        for verb in action_verbs:
+            # Contar ocorrências do verbo (início de frase ou após bullet)
+            pattern = rf'(?:^|[-•*]\s*|[\n\r]\s*){verb}\b'
+            matches = re.findall(pattern, text_lower)
+            count += len(matches)
+        
+        return count
+    
+    def _validate_date_formats(self, text: str) -> bool:
+        """
+        Valida se as datas estão em formato padrão (MM/AAAA ou Mês/AAAA).
+        
+        Datas consistentes ajudam no parsing do ATS.
+        """
+        # Padrões de data válidos
+        valid_patterns = [
+            r'\d{1,2}/\d{4}',  # MM/AAAA ou M/AAAA
+            r'(?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*\.?\s*(?:de\s*)?\d{4}',  # Mês AAAA
+            r'(?:janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s*(?:de\s*)?\d{4}',
+        ]
+        
+        # Padrões de data problemáticos
+        invalid_patterns = [
+            r'\d{4}\s*[-–/]\s*\d{4}',  # AAAA - AAAA (sem mês)
+            r'\d{1,2}/\d{1,2}/\d{2}(?!\d)',  # DD/MM/AA (ano curto)
+        ]
+        
+        # Contar padrões válidos e inválidos
+        valid_count = 0
+        invalid_count = 0
+        
+        text_lower = text.lower()
+        
+        for pattern in valid_patterns:
+            valid_count += len(re.findall(pattern, text_lower))
+        
+        for pattern in invalid_patterns:
+            invalid_count += len(re.findall(pattern, text_lower))
+        
+        # Válido se tem mais datas válidas que inválidas (ou nenhuma inválida)
+        return invalid_count == 0 or valid_count > invalid_count * 2
+    
+    def _generate_ats_checklist(
+        self,
+        text: str,
+        sections_detected: List[SectionAnalysis],
+        sections_missing: List[str],
+        contact: Dict[str, Optional[str]],
+        keywords: List[KeywordMatch],
+        metrics_found: int,
+        date_format_valid: bool
+    ) -> List[ATSChecklistItem]:
+        """
+        Gera checklist de compatibilidade ATS.
+        
+        Baseado nas melhores práticas documentadas:
+        - Estrutura de uma coluna
+        - Títulos de seção padronizados
+        - Formato de arquivo (PDF texto / DOCX)
+        - Keywords contextualizadas
+        - Métricas de resultado
+        - Dados de contato completos
+        """
+        checklist = []
+        
+        # 1. ESTRUTURA
+        # Verificar seções essenciais
+        essential_detected = len(sections_detected) >= 4
+        checklist.append(ATSChecklistItem(
+            item="Seções essenciais detectadas (Dados, Experiência, Formação, Habilidades)",
+            passed=essential_detected,
+            category="estrutura",
+            severity="critical" if not essential_detected else "info",
+            suggestion="Use títulos padronizados: 'Experiência Profissional', 'Formação Acadêmica', 'Habilidades'"
+        ))
+        
+        # Verificar se não há seções faltando
+        no_missing = len(sections_missing) == 0
+        checklist.append(ATSChecklistItem(
+            item="Todas as seções obrigatórias presentes",
+            passed=no_missing,
+            category="estrutura",
+            severity="warning" if not no_missing else "info",
+            suggestion=f"Adicione as seções: {', '.join(sections_missing)}" if sections_missing else ""
+        ))
+        
+        # 2. CONTATO
+        has_email = bool(contact.get("email"))
+        checklist.append(ATSChecklistItem(
+            item="Email de contato presente",
+            passed=has_email,
+            category="conteudo",
+            severity="critical" if not has_email else "info",
+            suggestion="Adicione um email profissional no topo do currículo"
+        ))
+        
+        has_phone = bool(contact.get("telefone"))
+        checklist.append(ATSChecklistItem(
+            item="Telefone de contato presente",
+            passed=has_phone,
+            category="conteudo",
+            severity="warning" if not has_phone else "info",
+            suggestion="Adicione telefone com DDD para facilitar contato"
+        ))
+        
+        has_linkedin = bool(contact.get("linkedin"))
+        checklist.append(ATSChecklistItem(
+            item="Perfil LinkedIn incluído",
+            passed=has_linkedin,
+            category="conteudo",
+            severity="info",
+            suggestion="Adicione seu perfil LinkedIn (aumenta credibilidade)"
+        ))
+        
+        # 3. KEYWORDS
+        has_critical = len([k for k in keywords if k.importance == "critical"]) >= 3
+        checklist.append(ATSChecklistItem(
+            item="Keywords técnicas principais presentes (3+)",
+            passed=has_critical,
+            category="keywords",
+            severity="warning" if not has_critical else "info",
+            suggestion="Adicione tecnologias relevantes: Linux, AWS, Docker, Python, etc."
+        ))
+        
+        has_variety = len(set(k.keyword for k in keywords)) >= 8
+        checklist.append(ATSChecklistItem(
+            item="Variedade de keywords técnicas (8+)",
+            passed=has_variety,
+            category="keywords",
+            severity="info",
+            suggestion="Diversifique as tecnologias mencionadas"
+        ))
+        
+        # 4. CONTEÚDO
+        has_metrics = metrics_found >= 3
+        checklist.append(ATSChecklistItem(
+            item="Métricas e resultados quantificados (3+)",
+            passed=has_metrics,
+            category="conteudo",
+            severity="warning" if not has_metrics else "info",
+            suggestion="Adicione números: 'reduzi 30%', 'gerenciei 50 servidores', etc."
+        ))
+        
+        checklist.append(ATSChecklistItem(
+            item="Formato de datas consistente (MM/AAAA)",
+            passed=date_format_valid,
+            category="formatacao",
+            severity="warning" if not date_format_valid else "info",
+            suggestion="Use formato consistente: 'Janeiro 2023' ou '01/2023'"
+        ))
+        
+        # 5. FORMATAÇÃO
+        # Verificar caracteres especiais problemáticos
+        special_chars = len(re.findall(r'[►▪●○◦■□▸‣⁃★☆✓✗✔✘]', text))
+        no_special = special_chars < 5
+        checklist.append(ATSChecklistItem(
+            item="Bullets e caracteres simples (sem símbolos especiais)",
+            passed=no_special,
+            category="formatacao",
+            severity="warning" if not no_special else "info",
+            suggestion="Use bullets simples (-,*,•) em vez de símbolos decorativos"
+        ))
+        
+        # Verificar tamanho adequado
+        word_count = len(text.split())
+        good_length = 150 <= word_count <= 1200
+        checklist.append(ATSChecklistItem(
+            item="Tamanho adequado (150-1200 palavras)",
+            passed=good_length,
+            category="estrutura",
+            severity="warning" if not good_length else "info",
+            suggestion="Currículo muito curto" if word_count < 150 else "Currículo muito longo" if word_count > 1200 else ""
+        ))
+        
+        return checklist
+    
     def _generate_feedback(
         self,
         keywords: List[KeywordMatch],
@@ -540,7 +808,10 @@ class ATSEngine:
         sections_missing: List[str],
         contact: Dict[str, Optional[str]],
         word_count: int,
-        critical_keywords: List[str]
+        critical_keywords: List[str],
+        metrics_found: int = 0,
+        action_verbs: int = 0,
+        date_format_valid: bool = True
     ) -> Tuple[List[str], List[str], List[str]]:
         """Gera warnings, sugestões e pontos positivos."""
         warnings = []
@@ -561,6 +832,12 @@ class ATSEngine:
         if word_count < 150:
             warnings.append("⚠️ Currículo muito curto - adicione mais detalhes")
         
+        if not date_format_valid:
+            warnings.append("⚠️ Formato de datas inconsistente - use padrão MM/AAAA")
+        
+        if metrics_found < 2:
+            warnings.append("⚠️ Poucas métricas quantitativas - adicione números e resultados")
+        
         # Sugestões
         if not contact.get("linkedin"):
             suggestions.append("💡 Adicione seu perfil LinkedIn para credibilidade")
@@ -570,6 +847,12 @@ class ATSEngine:
         
         if len(critical_keywords) < 5:
             suggestions.append("💡 Adicione mais tecnologias específicas (ex: Linux, AWS, Docker)")
+        
+        if action_verbs < 5:
+            suggestions.append("💡 Use mais verbos de ação: 'implementei', 'desenvolvi', 'otimizei'")
+        
+        if metrics_found >= 2 and metrics_found < 5:
+            suggestions.append("💡 Bom uso de métricas - adicione mais números para destacar resultados")
         
         # Positivos
         if len(keywords) >= 10:
@@ -586,6 +869,15 @@ class ATSEngine:
         
         if 200 <= word_count <= 800:
             positives.append("✅ Tamanho adequado para análise ATS")
+        
+        if metrics_found >= 5:
+            positives.append("✅ Excelente uso de métricas e resultados quantificados")
+        
+        if action_verbs >= 8:
+            positives.append("✅ Bom uso de verbos de ação nas experiências")
+        
+        if date_format_valid:
+            positives.append("✅ Formato de datas consistente e adequado")
         
         return warnings, suggestions, positives
     

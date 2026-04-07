@@ -67,6 +67,21 @@ def result_to_dict(result: ATSAnalysisResult) -> dict:
         "warnings": result.warnings,
         "suggestions": result.suggestions,
         "positives": result.positives,
+        # Novos campos
+        "ats_checklist": [
+            {
+                "item": c.item,
+                "passed": c.passed,
+                "category": c.category,
+                "severity": c.severity,
+                "suggestion": c.suggestion
+            }
+            for c in result.ats_checklist
+        ],
+        "metrics_found": result.metrics_found,
+        "action_verbs_found": result.action_verbs_found,
+        "date_format_valid": result.date_format_valid,
+        # Metadados
         "total_words": result.total_words,
         "unique_keywords": result.unique_keywords,
         "processing_time_ms": result.processing_time_ms
