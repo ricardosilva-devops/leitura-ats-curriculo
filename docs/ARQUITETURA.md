@@ -49,7 +49,10 @@ Documentação da arquitetura do projeto de análise heurística de currículos 
 
 | Arquivo | Função |
 |---------|--------|
-| `app.py` | Rotas HTTP, configuração Flask |
+| `app.py` | Factory function, rotas, handlers de erro, headers de segurança |
+| `config.py` | Configuração centralizada (Dev/Prod/Test) |
+| `validators/` | Validação robusta de uploads (extensão, MIME, magic bytes) |
+| `utils/` | Respostas padronizadas e logging com privacidade |
 | `wsgi.py` | Entry point para Gunicorn |
 | `gunicorn_config.py` | Configuração do servidor WSGI |
 
@@ -59,6 +62,12 @@ Documentação da arquitetura do projeto de análise heurística de currículos 
 | `/` | GET | Página inicial (upload) |
 | `/analyze` | POST | Recebe PDF, retorna análise JSON |
 | `/health` | GET | Health check para monitoramento |
+
+**Segurança:**
+- Validação de PDF em 3 camadas (extensão + MIME + magic bytes)
+- Headers de segurança HTTP (XSS, clickjacking, nosniff)
+- Sanitização de nomes de arquivo
+- Logging com controle de privacidade (dados pessoais não logados por padrão)
 
 ### 3. Engine ATS
 
@@ -71,7 +80,7 @@ Documentação da arquitetura do projeto de análise heurística de currículos 
 
 **Pipeline de Análise:**
 ```
-Currículo técnico (PDF) → Extração (PyMuPDF) → Texto → NLP (NLTK) → Scoring heurístico → JSON
+Currículo técnico (PDF) → Validação → Extração (PyMuPDF) → Texto → NLP (NLTK) → Scoring heurístico → JSON
 ```
 
 ### 4. Logs
@@ -81,13 +90,16 @@ Cada análise gera um arquivo em `logs/` (na raiz do projeto):
 analise_20260405_143052.txt
 ```
 
-**Conteúdo:**
+**Conteúdo (modo padrão - respeita privacidade):**
 - Timestamp da análise
-- Nome do arquivo enviado
-- Texto extraído (para debug)
+- Scores e classificação
 - Keywords encontradas
-- Scores parciais e final
-- Dados estruturados extraídos
+- Feedback (alertas, sugestões, positivos)
+
+**Conteúdo (modo detalhado - `LOG_DETAILED=true`):**
+- Todo o acima, mais:
+- Texto completo extraído
+- Dados pessoais identificados
 
 ---
 
@@ -95,8 +107,8 @@ analise_20260405_143052.txt
 
 ```
 ┌──────────┐    ┌───────────┐    ┌────────────┐    ┌──────────┐
-│  Upload  │───▶│  Flask    │───▶│  Extração  │───▶│  NLP     │
-│   PDF    │    │  Recebe   │    │  PyMuPDF   │    │  NLTK    │
+│  Upload  │───▶│  Validar  │───▶│  Extração  │───▶│  NLP     │
+│   PDF    │    │  (3 cam.) │    │  PyMuPDF   │    │  NLTK    │
 └──────────┘    └───────────┘    └────────────┘    └──────────┘
                                                         │
 ┌──────────┐    ┌───────────┐    ┌────────────┐        │
@@ -108,7 +120,7 @@ analise_20260405_143052.txt
 **Detalhamento:**
 
 1. **Upload:** Arquivo PDF enviado via multipart/form-data
-2. **Recepção:** Flask valida tipo e tamanho do arquivo
+2. **Validação:** 3 camadas (extensão .pdf + MIME type + magic bytes)
 3. **Extração:** PyMuPDF converte PDF em texto puro
 4. **NLP:** NLTK tokeniza e processa o texto
    - Stemming com RSLPStemmer (português)
@@ -118,7 +130,7 @@ analise_20260405_143052.txt
    - Keywords: 40% (palavras-chave técnicas encontradas)
    - Estrutura: 35% (seções identificadas)
    - Legibilidade: 25% (clareza do texto)
-6. **Resposta:** JSON com análise completa do currículo técnico
+6. **Resposta:** JSON padronizado com análise completa do currículo técnico
 
 ---
 
@@ -126,10 +138,20 @@ analise_20260405_143052.txt
 
 ```
 aplicacao/
-├── app.py                    # Aplicação Flask principal
+├── app.py                    # Factory function e rotas
+├── config.py                 # Configuração centralizada
 ├── wsgi.py                   # Entry point Gunicorn
 ├── gunicorn_config.py        # Configuração Gunicorn
 ├── __init__.py               # Pacote Python
+│
+├── validators/               # Validação de entrada
+│   ├── __init__.py
+│   └── upload.py             # Validação de PDF (3 camadas)
+│
+├── utils/                    # Utilitários
+│   ├── __init__.py
+│   ├── responses.py          # Respostas JSON padronizadas
+│   └── logging.py            # Logger com privacidade
 │
 ├── leitura_ats/              # Motor de análise ATS
 │   ├── __init__.py
@@ -154,6 +176,7 @@ aplicacao/
 │       └── main.js
 
 # Na raiz do projeto:
+tests/                        # Testes automatizados (pytest)
 logs/                         # Logs de análise (gitignored)
 ```
 
@@ -169,6 +192,8 @@ logs/                         # Logs de análise (gitignored)
 | Gunicorn | 21.x | Servidor WSGI produção |
 | PyMuPDF | 1.24.x | Extração de PDF |
 | NLTK | 3.8.x | Processamento de linguagem natural |
+| pytest | 7.x | Testes automatizados |
+| pytest-cov | 4.x | Coverage de testes |
 
 ### NLTK Data
 
@@ -182,12 +207,23 @@ logs/                         # Logs de análise (gitignored)
 
 ## Configurações
 
-### Flask (app.py)
+### Ambientes (config.py)
 
-```python
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key')
-```
+| Ambiente | `FLASK_ENV` | DEBUG | LOG_DETAILED |
+|----------|-------------|-------|--------------|
+| Development | development | True | False |
+| Production | production | False | False |
+| Testing | testing | True | True |
+
+### Variáveis de Ambiente
+
+| Variável | Descrição | Default |
+|----------|-----------|---------|
+| `FLASK_ENV` ou `APP_ENV` | Ambiente de execução | development |
+| `SECRET_KEY` | Chave secreta Flask | dev-key (mude em prod!) |
+| `LOG_DETAILED` | Logar texto completo do currículo | false |
+| `LOG_LEVEL` | Nível de log | INFO |
+| `GUNICORN_WORKERS` | Número de workers | auto (CPUs * 2 + 1) |
 
 ### Gunicorn (gunicorn_config.py)
 
@@ -213,6 +249,9 @@ loglevel = os.getenv("LOG_LEVEL", "info")
 | NLTK (não spaCy) | Leve, suficiente para stemming PT |
 | Single-page | UX simples, sem navegação |
 | Logs em arquivo | Debug local, sem infraestrutura externa |
+| Factory pattern | Facilita testes e configuração por ambiente |
+| Validação em 3 camadas | Segurança sem dependências externas |
+| Logging com privacidade | LGPD compliance, opt-in para dados pessoais |
 
 ---
 

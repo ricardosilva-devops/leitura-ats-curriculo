@@ -6,32 +6,107 @@ identificando palavras-chave da área de TI e verificando estrutura para legibil
 """
 
 import os
-import json
-from datetime import datetime
-from dataclasses import asdict
-from flask import Flask, render_template, request, jsonify
-
 import sys
-import os
+import logging
+from datetime import datetime
+
+from flask import Flask, render_template, request, jsonify
 
 # Adicionar diretório atual ao path para imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from config import get_config
+from validators import upload_validator
+from utils import success_response, error_response, ERROR_MESSAGES, AnalysisLogger
 from extracao_pdf.extractor import PDFExtractor
-from leitura_ats.engine import ATSEngine, ATSAnalysisResult, format_analysis_result
+from leitura_ats.engine import ATSEngine, ATSAnalysisResult
 
 
 # =============================================================================
 # CONFIGURAÇÃO DA APLICAÇÃO
 # =============================================================================
 
-app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+def create_app(config_class=None):
+    """
+    Factory function para criar a aplicação Flask.
+    
+    Args:
+        config_class: Classe de configuração (opcional, detecta automaticamente)
+    
+    Returns:
+        Aplicação Flask configurada
+    """
+    app = Flask(__name__)
+    
+    # Carregar configuração
+    if config_class is None:
+        config_class = get_config()
+    app.config.from_object(config_class)
+    
+    # Configurar logging
+    _configure_logging(app)
+    
+    # Registrar rotas
+    _register_routes(app)
+    
+    # Registrar handlers de erro
+    _register_error_handlers(app)
+    
+    # Adicionar headers de segurança
+    _register_security_headers(app)
+    
+    return app
 
-# Instâncias dos engines
+
+def _configure_logging(app):
+    """Configura logging da aplicação."""
+    log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    logging.basicConfig(
+        level=getattr(logging, log_level, logging.INFO),
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    if not app.config.get('DEBUG'):
+        # Em produção, reduzir verbosidade de bibliotecas externas
+        logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
+
+def _register_security_headers(app):
+    """Adiciona headers de segurança HTTP em todas as respostas."""
+    @app.after_request
+    def add_security_headers(response):
+        # Proteção contra XSS
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        
+        # Controle de cache para respostas sensíveis
+        if request.endpoint == 'analyze':
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+        
+        # CSP básico (permite recursos locais)
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'"
+        )
+        
+        return response
+
+
+# Instâncias globais dos engines (reutilizadas entre requests)
 pdf_extractor = PDFExtractor()
 ats_engine = ATSEngine()
+
+# Logger de análises com controle de privacidade
+LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
+analysis_logger = AnalysisLogger(
+    log_dir=LOG_DIR,
+    detailed=os.environ.get('LOG_DETAILED', 'false').lower() == 'true'
+)
 
 
 # =============================================================================
@@ -130,295 +205,147 @@ def result_to_dict(result: ATSAnalysisResult) -> dict:
 
 
 # =============================================================================
-# LOGGING
+# ROTAS (registradas via função)
 # =============================================================================
 
-LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
-
-def save_analysis_log(filename: str, extracted_text: str, response: dict):
-    """Salva log detalhado da análise em arquivo TXT."""
-    # Criar diretório de logs se não existir
-    os.makedirs(LOG_DIR, exist_ok=True)
+def _register_routes(app):
+    """Registra todas as rotas da aplicação."""
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_filename = f"analise_{timestamp}.txt"
-    log_path = os.path.join(LOG_DIR, log_filename)
+    @app.route('/')
+    def index():
+        """Página principal com formulário de upload."""
+        return render_template('index.html')
     
-    analysis = response.get("analysis", {})
-    extracted_data = analysis.get("extracted_data", {})
+    @app.route('/analyze', methods=['POST'])
+    def analyze():
+        """
+        Endpoint para análise de currículo técnico em PDF.
+        
+        Validações:
+        - Presença do arquivo
+        - Extensão .pdf
+        - MIME type application/pdf
+        - Magic bytes de PDF válidos
+        
+        Returns:
+            JSON com análise ATS completa ou erro padronizado
+        """
+        # Verificar se arquivo foi enviado
+        if 'file' not in request.files:
+            return error_response(ERROR_MESSAGES["no_file"], 400, "NO_FILE")
+        
+        file = request.files['file']
+        
+        # Verificar se arquivo foi selecionado
+        if file.filename == '':
+            return error_response(ERROR_MESSAGES["no_file_selected"], 400, "NO_FILE_SELECTED")
+        
+        # Validação robusta do arquivo (extensão + MIME + magic bytes)
+        is_valid, validation_error = upload_validator.validate(file)
+        if not is_valid:
+            return error_response(validation_error, 400, "INVALID_FILE")
+        
+        # Sanitizar nome do arquivo
+        safe_filename = upload_validator.sanitize_filename(file.filename)
+        
+        try:
+            # Ler bytes do arquivo
+            pdf_bytes = file.read()
+            
+            # Verificar tamanho
+            max_size = app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)
+            if len(pdf_bytes) > max_size:
+                return error_response(ERROR_MESSAGES["file_too_large"], 413, "FILE_TOO_LARGE")
+            
+            # Extrair texto do PDF
+            extraction_result = pdf_extractor.extract_from_bytes(pdf_bytes)
+            
+            # Verificar se extraiu algo
+            if not extraction_result.text.strip():
+                return error_response(ERROR_MESSAGES["empty_pdf"], 400, "EMPTY_PDF")
+            
+            # Executar análise ATS
+            ats_result = ats_engine.analyze(extraction_result.text)
+            
+            # Preparar resposta
+            response_data = {
+                "extraction": {
+                    "page_count": extraction_result.page_count,
+                    "word_count": extraction_result.word_count,
+                    "char_count": extraction_result.char_count,
+                    "has_images": extraction_result.has_images,
+                    "has_tables": extraction_result.has_tables,
+                    "warnings": extraction_result.warnings,
+                    "sections_detected": extraction_result.sections_detected,
+                    "text_preview": extraction_result.text[:500] + "..." if len(extraction_result.text) > 500 else extraction_result.text
+                },
+                "analysis": result_to_dict(ats_result)
+            }
+            
+            # Salvar log (respeitando configuração de privacidade)
+            try:
+                analysis_logger.log_analysis(
+                    filename=safe_filename,
+                    extracted_text=extraction_result.text,
+                    response=response_data,
+                    logger=app.logger
+                )
+            except Exception as log_error:
+                app.logger.warning(f"Falha ao salvar log: {log_error}")
+            
+            return success_response(response_data)
+        
+        except ValueError as e:
+            return error_response(str(e), 400, "VALIDATION_ERROR")
+        
+        except Exception as e:
+            # Log do erro real para debugging (sem expor ao usuário)
+            app.logger.error(f"Erro ao processar PDF: {str(e)}", exc_info=True)
+            return error_response(ERROR_MESSAGES["processing_error"], 500, "PROCESSING_ERROR")
     
-    with open(log_path, 'w', encoding='utf-8') as f:
-        f.write("=" * 80 + "\n")
-        f.write(f"LOG DE ANÁLISE ATS - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
-        f.write("=" * 80 + "\n\n")
+    @app.route('/health')
+    def health():
+        """
+        Endpoint de health check.
         
-        f.write(f"Arquivo: {filename}\n")
-        f.write(f"Páginas: {response['extraction']['page_count']}\n")
-        f.write(f"Palavras: {response['extraction']['word_count']}\n")
-        f.write(f"Tempo de processamento: {analysis.get('processing_time_ms', 0)}ms\n")
-        f.write("\n")
-        
-        f.write("-" * 80 + "\n")
-        f.write("SCORES\n")
-        f.write("-" * 80 + "\n")
-        f.write(f"Score Final: {analysis.get('final_score', 0)}/100\n")
-        f.write(f"Keywords: {analysis.get('keyword_score', 0)}/100\n")
-        f.write(f"Estrutura: {analysis.get('structure_score', 0)}/100\n")
-        f.write(f"Legibilidade: {analysis.get('readability_score', 0)}/100\n")
-        f.write(f"Classificação: {analysis.get('match_level', '-')}\n")
-        f.write(f"Recomendação: {analysis.get('recommendation', '-')}\n")
-        f.write("\n")
-        
-        f.write("-" * 80 + "\n")
-        f.write("TEXTO EXTRAÍDO DO PDF\n")
-        f.write("-" * 80 + "\n")
-        f.write(extracted_text + "\n\n")
-        
-        f.write("-" * 80 + "\n")
-        f.write("DADOS ESTRUTURADOS EXTRAÍDOS\n")
-        f.write("-" * 80 + "\n\n")
-        
-        if extracted_data:
-            f.write(">>> DADOS PESSOAIS:\n")
-            f.write(f"    Nome: {extracted_data.get('name', 'NÃO ENCONTRADO')}\n")
-            f.write(f"    Email: {extracted_data.get('email', 'NÃO ENCONTRADO')}\n")
-            f.write(f"    Telefone: {extracted_data.get('phone', 'NÃO ENCONTRADO')}\n")
-            f.write(f"    LinkedIn: {extracted_data.get('linkedin', 'NÃO ENCONTRADO')}\n")
-            f.write(f"    Localização: {extracted_data.get('location', 'NÃO ENCONTRADO')}\n")
-            f.write("\n")
-            
-            f.write(">>> RESUMO PROFISSIONAL:\n")
-            summary = extracted_data.get('summary', '')
-            f.write(f"    {summary if summary else 'NÃO ENCONTRADO'}\n")
-            f.write("\n")
-            
-            f.write(">>> OBJETIVO:\n")
-            objective = extracted_data.get('objective', '')
-            f.write(f"    {objective if objective else 'NÃO ENCONTRADO'}\n")
-            f.write("\n")
-            
-            f.write(">>> EXPERIÊNCIAS PROFISSIONAIS:\n")
-            experiences = extracted_data.get('experiences', [])
-            if experiences:
-                for i, exp in enumerate(experiences, 1):
-                    f.write(f"\n    [{i}] {exp.get('role', 'Cargo não identificado')}\n")
-                    f.write(f"        Empresa: {exp.get('company', 'Não identificada')}\n")
-                    f.write(f"        Período: {exp.get('period', 'Não identificado')}\n")
-                    f.write(f"        Data Início: {exp.get('start_date', '-')}\n")
-                    f.write(f"        Data Fim: {exp.get('end_date', '-')}\n")
-                    f.write(f"        Descrição: {exp.get('description', '-')[:200]}...\n")
-            else:
-                f.write("    NÃO ENCONTRADAS\n")
-            f.write("\n")
-            
-            f.write(">>> FORMAÇÃO ACADÊMICA:\n")
-            education = extracted_data.get('education', [])
-            if education:
-                for edu in education:
-                    f.write(f"    - {edu}\n")
-            else:
-                f.write("    NÃO ENCONTRADA\n")
-            f.write("\n")
-            
-            f.write(">>> HABILIDADES POR CATEGORIA:\n")
-            skills_by_cat = extracted_data.get('skills_by_category', {})
-            if skills_by_cat:
-                for cat, skills in skills_by_cat.items():
-                    f.write(f"    {cat.upper()}: {', '.join(skills)}\n")
-            else:
-                f.write("    NÃO CATEGORIZADAS\n")
-            f.write("\n")
-            
-            f.write(">>> TODAS AS SKILLS ENCONTRADAS:\n")
-            skills = extracted_data.get('skills', [])
-            if skills:
-                f.write(f"    {', '.join(skills)}\n")
-            else:
-                f.write("    NENHUMA\n")
-            f.write("\n")
-            
-            f.write(">>> IDIOMAS:\n")
-            languages = extracted_data.get('languages', [])
-            if languages:
-                for lang in languages:
-                    f.write(f"    - {lang}\n")
-            else:
-                f.write("    NÃO ENCONTRADOS\n")
-            f.write("\n")
-            
-            f.write(">>> CERTIFICAÇÕES:\n")
-            certifications = extracted_data.get('certifications', [])
-            if certifications:
-                for cert in certifications:
-                    f.write(f"    - {cert}\n")
-            else:
-                f.write("    NÃO ENCONTRADAS\n")
-        else:
-            f.write("NENHUM DADO ESTRUTURADO FOI EXTRAÍDO\n")
-        
-        f.write("\n")
-        f.write("-" * 80 + "\n")
-        f.write("KEYWORDS IDENTIFICADAS\n")
-        f.write("-" * 80 + "\n")
-        keywords = analysis.get('keywords_found', [])
-        if keywords:
-            for kw in keywords:
-                f.write(f"    [{kw.get('importance', '-').upper()}] {kw.get('keyword', '-')} ")
-                f.write(f"(encontrado como: '{kw.get('found_as', '-')}', tipo: {kw.get('match_type', '-')})\n")
-        f.write("\n")
-        
-        f.write("-" * 80 + "\n")
-        f.write("CONTATO EXTRAÍDO\n")
-        f.write("-" * 80 + "\n")
-        contact = analysis.get('contact_info', {})
-        for key, value in contact.items():
-            f.write(f"    {key}: {value if value else 'NÃO ENCONTRADO'}\n")
-        f.write("\n")
-        
-        f.write("-" * 80 + "\n")
-        f.write("FEEDBACK\n")
-        f.write("-" * 80 + "\n")
-        f.write("ALERTAS:\n")
-        for w in analysis.get('warnings', []):
-            f.write(f"    ⚠️ {w}\n")
-        f.write("\nSUGESTÕES:\n")
-        for s in analysis.get('suggestions', []):
-            f.write(f"    💡 {s}\n")
-        f.write("\nPONTOS POSITIVOS:\n")
-        for p in analysis.get('positives', []):
-            f.write(f"    ✅ {p}\n")
-        
-        f.write("\n")
-        f.write("=" * 80 + "\n")
-        f.write("FIM DO LOG\n")
-        f.write("=" * 80 + "\n")
-    
-    app.logger.info(f"Log salvo em: {log_path}")
-    return log_path
-
-
-# =============================================================================
-# ROTAS
-# =============================================================================
-
-@app.route('/')
-def index():
-    """Página principal com formulário de upload."""
-    return render_template('index.html')
-
-
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    """
-    Endpoint para análise de currículo.
-    
-    Recebe PDF via upload e retorna análise ATS completa.
-    """
-    # Verificar se arquivo foi enviado
-    if 'file' not in request.files:
+        Retorna status básico sem expor informações sensíveis.
+        """
         return jsonify({
-            "success": False,
-            "error": "Nenhum arquivo enviado"
-        }), 400
-    
-    file = request.files['file']
-    
-    # Verificar se arquivo foi selecionado
-    if file.filename == '':
-        return jsonify({
-            "success": False,
-            "error": "Nenhum arquivo selecionado"
-        }), 400
-    
-    # Verificar extensão
-    if not file.filename.lower().endswith('.pdf'):
-        return jsonify({
-            "success": False,
-            "error": "Apenas arquivos PDF são aceitos"
-        }), 400
-    
-    try:
-        # Ler bytes do arquivo
-        pdf_bytes = file.read()
-        
-        # Extrair texto do PDF
-        extraction_result = pdf_extractor.extract_from_bytes(pdf_bytes)
-        
-        # Verificar se extraiu algo
-        if not extraction_result.text.strip():
-            return jsonify({
-                "success": False,
-                "error": "Não foi possível extrair texto do PDF. "
-                         "O arquivo pode estar vazio ou ser uma imagem."
-            }), 400
-        
-        # Executar análise ATS
-        ats_result = ats_engine.analyze(extraction_result.text)
-        
-        # Preparar resposta
-        response = {
-            "success": True,
-            "extraction": {
-                "page_count": extraction_result.page_count,
-                "word_count": extraction_result.word_count,
-                "char_count": extraction_result.char_count,
-                "has_images": extraction_result.has_images,
-                "has_tables": extraction_result.has_tables,
-                "warnings": extraction_result.warnings,
-                "sections_detected": extraction_result.sections_detected,
-                "text_preview": extraction_result.text[:500] + "..." if len(extraction_result.text) > 500 else extraction_result.text
-            },
-            "analysis": result_to_dict(ats_result)
-        }
-        
-        # Salvar log de debug em arquivo TXT
-        save_analysis_log(file.filename, extraction_result.text, response)
-        
-        return jsonify(response)
-    
-    except ValueError as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 400
-    
-    except Exception as e:
-        app.logger.error(f"Erro ao processar PDF: {str(e)}")
-        return jsonify({
-            "success": False,
-            "error": "Erro interno ao processar o arquivo. Tente novamente."
-        }), 500
-
-
-@app.route('/health')
-def health():
-    """Endpoint de health check."""
-    return jsonify({
-        "status": "healthy",
-        "service": "leitura-ats-curriculo"
-    })
+            "status": "healthy",
+            "service": "leitura-ats-curriculo"
+        })
 
 
 # =============================================================================
 # ERROR HANDLERS
 # =============================================================================
 
-@app.errorhandler(413)
-def too_large(e):
-    """Handler para arquivo muito grande."""
-    return jsonify({
-        "success": False,
-        "error": "Arquivo muito grande. O tamanho máximo é 16MB."
-    }), 413
+def _register_error_handlers(app):
+    """Registra handlers de erro globais."""
+    
+    @app.errorhandler(413)
+    def too_large(e):
+        """Handler para arquivo muito grande."""
+        return error_response(ERROR_MESSAGES["file_too_large"], 413, "FILE_TOO_LARGE")
+    
+    @app.errorhandler(500)
+    def server_error(e):
+        """Handler para erro interno."""
+        app.logger.error(f"Erro interno: {e}", exc_info=True)
+        return error_response(ERROR_MESSAGES["internal_error"], 500, "INTERNAL_ERROR")
+    
+    @app.errorhandler(404)
+    def not_found(e):
+        """Handler para rota não encontrada."""
+        return error_response("Recurso não encontrado", 404, "NOT_FOUND")
 
 
-@app.errorhandler(500)
-def server_error(e):
-    """Handler para erro interno."""
-    return jsonify({
-        "success": False,
-        "error": "Erro interno do servidor. Tente novamente mais tarde."
-    }), 500
+# =============================================================================
+# COMPATIBILIDADE / CRIAÇÃO DA APLICAÇÃO
+# =============================================================================
+
+# Criar instância global para compatibilidade com wsgi.py e gunicorn
+app = create_app()
 
 
 # =============================================================================
@@ -426,7 +353,19 @@ def server_error(e):
 # =============================================================================
 
 if __name__ == '__main__':
-    # Rodar em modo desenvolvimento
+    # Em desenvolvimento, usar servidor Flask built-in
+    # Em produção, usar gunicorn via wsgi.py
+    import sys
+    
+    # Verificar se está em modo de produção
+    env = os.environ.get('FLASK_ENV', os.environ.get('APP_ENV', 'development'))
+    
+    if env == 'production':
+        print("⚠️  Modo produção detectado. Use gunicorn em vez de app.run().")
+        print("   Comando: gunicorn -c gunicorn_config.py wsgi:application")
+        sys.exit(1)
+    
+    # Desenvolvimento: rodar com debug
     app.run(
         host='0.0.0.0',
         port=5000,
