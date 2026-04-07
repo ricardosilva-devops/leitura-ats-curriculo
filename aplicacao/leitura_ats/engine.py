@@ -113,6 +113,17 @@ class ExperienceItem:
 
 
 @dataclass
+class EducationItem:
+    """Item de formação acadêmica extraído."""
+    course: str
+    institution: str = ""
+    period: str = ""
+    start_date: str = ""
+    end_date: str = ""
+    status: str = ""  # "concluído", "cursando"
+
+
+@dataclass
 class ExtractedData:
     """Dados estruturados extraídos do currículo."""
     # Dados pessoais
@@ -130,7 +141,7 @@ class ExtractedData:
     experiences: List[ExperienceItem] = field(default_factory=list)
     
     # Formação
-    education: List[str] = field(default_factory=list)
+    education: List[EducationItem] = field(default_factory=list)
     
     # Habilidades
     skills: List[str] = field(default_factory=list)
@@ -730,15 +741,6 @@ class ATSEngine:
             suggestion="Adicione telefone com DDD para facilitar contato"
         ))
         
-        has_linkedin = bool(contact.get("linkedin"))
-        checklist.append(ATSChecklistItem(
-            item="Perfil LinkedIn incluído",
-            passed=has_linkedin,
-            category="conteudo",
-            severity="info",
-            suggestion="Adicione seu perfil LinkedIn (aumenta credibilidade)"
-        ))
-        
         # 3. KEYWORDS
         has_critical = len([k for k in keywords if k.importance == "critical"]) >= 3
         checklist.append(ATSChecklistItem(
@@ -849,7 +851,7 @@ class ATSEngine:
             suggestions.append("💡 Adicione mais tecnologias específicas (ex: Linux, AWS, Docker)")
         
         if action_verbs < 5:
-            suggestions.append("💡 Use mais verbos de ação: 'implementei', 'desenvolvi', 'otimizei'")
+            suggestions.append("💡 Use mais verbos de ação no infinitivo: 'implementar', 'desenvolver', 'otimizar'")
         
         if metrics_found >= 2 and metrics_found < 5:
             suggestions.append("💡 Bom uso de métricas - adicione mais números para destacar resultados")
@@ -920,14 +922,21 @@ class ATSEngine:
         # 6. Extrair formação
         data.education = self._extract_education(text)
         
-        # 7. Extrair habilidades
-        # Filtrar keywords que são realmente skills (não senioridade, idiomas, etc.)
-        non_skill_keywords = {'júnior', 'junior', 'pleno', 'sênior', 'senior', 'remoto', 
-                              'presencial', 'híbrido', 'hibrido', 'inglês', 'ingles', 
-                              'português', 'portugues', 'espanhol', 'alemão', 'alemao'}
-        data.skills = [k.keyword for k in keywords_found 
-                       if k.keyword.lower() not in non_skill_keywords]
-        data.skills_by_category = self._categorize_skills(keywords_found)
+        # 7. Extrair habilidades DA SEÇÃO do currículo (não auto-gerar)
+        skills_flat, skills_by_cat = self._extract_skills_from_section(text)
+        
+        # Se conseguiu extrair da seção, usar. Senão, fallback para keywords
+        if skills_flat:
+            data.skills = skills_flat
+            data.skills_by_category = skills_by_cat
+        else:
+            # Fallback: usar keywords filtradas
+            non_skill_keywords = {'júnior', 'junior', 'pleno', 'sênior', 'senior', 'remoto', 
+                                  'presencial', 'híbrido', 'hibrido', 'inglês', 'ingles', 
+                                  'português', 'portugues', 'espanhol', 'alemão', 'alemao'}
+            data.skills = [k.keyword for k in keywords_found 
+                           if k.keyword.lower() not in non_skill_keywords]
+            data.skills_by_category = self._categorize_skills(keywords_found)
         
         # 8. Extrair idiomas
         data.languages = self._extract_languages(text)
@@ -1088,8 +1097,8 @@ class ATSEngine:
         exp_text = text[exp_start:exp_end]
         
         # Padrão para linha de experiência (cargo | empresa | período)
-        # Formato: "Cargo Sênior/Pleno/Júnior | Empresa (Ramo) | Mês de ANO a Mês de ANO"
-        exp_line_pattern = r'([A-Za-zÀ-ÿ\s]+(?:Sênior|Senior|Pleno|Júnior|Junior|Jr)?)\s*[|\-–]\s*([A-Za-zÀ-ÿ\s\(\)\.]+)\s*[|\-–]\s*([A-Za-zÀ-ÿ]+\s*(?:de\s*)?\d{4}\s*(?:a|até|[-–])\s*(?:[A-Za-zÀ-ÿ]+\s*(?:de\s*)?\d{4}|Atual|Presente|atual|presente|atualmente))'
+        # Formato: "Cargo Sênior/Pleno/Júnior/N1/N2 (opcional) | Empresa (Ramo) | Mês de ANO a Mês de ANO"
+        exp_line_pattern = r'([A-Za-zÀ-ÿ\s]+(?:Sênior|Senior|Pleno|Júnior|Junior|Jr|N\d+)?(?:\s*\([^)]+\))?)\s*[|\-–]\s*([A-Za-zÀ-ÿ\s\(\)\.]+)\s*[|\-–]\s*([A-Za-zÀ-ÿ]+\s*(?:de\s*)?\d{4}\s*(?:a|até|[-–])\s*(?:[A-Za-zÀ-ÿ]+\s*(?:de\s*)?\d{4}|Atual|Presente|atual|presente|atualmente))'
         
         # Padrão alternativo para datas em formato MM/YYYY ou apenas "Ano a Ano"
         date_patterns = [
@@ -1123,7 +1132,7 @@ class ATSEngine:
             if match:
                 # Salvar experiência anterior
                 if current_exp and (current_exp.company or current_exp.role):
-                    current_exp.description = ' '.join(description_lines)[:500]
+                    current_exp.description = '\n'.join(description_lines)
                     experiences.append(current_exp)
                 
                 current_exp = ExperienceItem(
@@ -1153,7 +1162,7 @@ class ATSEngine:
             if has_cargo and has_date:
                 # Salvar experiência anterior
                 if current_exp and (current_exp.company or current_exp.role):
-                    current_exp.description = ' '.join(description_lines)[:500]
+                    current_exp.description = '\n'.join(description_lines)
                     experiences.append(current_exp)
                 
                 current_exp = ExperienceItem(company="")
@@ -1161,9 +1170,9 @@ class ATSEngine:
                 # Extrair cargo
                 for kw in cargo_keywords:
                     if kw in line.lower():
-                        # Encontrar o cargo completo
+                        # Encontrar o cargo completo (incluindo N1, N2, SLA, etc.)
                         cargo_match = re.search(
-                            rf'([A-Za-zÀ-ÿ\s]*{kw}[A-Za-zÀ-ÿ\s]*(?:Sênior|Senior|Pleno|Júnior|Junior|Jr|N\d)?)',
+                            rf'([A-Za-zÀ-ÿ\s]*{kw}[A-Za-zÀ-ÿ\s]*(?:Sênior|Senior|Pleno|Júnior|Junior|Jr|N\d+)?(?:\s*\([^)]+\))?)',
                             line, re.IGNORECASE
                         )
                         if cargo_match:
@@ -1188,22 +1197,26 @@ class ATSEngine:
                 continue
             
             # Se já temos uma experiência em andamento, acumular descrição
-            # Mas ignorar linhas que são apenas bullets de atividades
             if current_exp:
-                # Limpar bullets e adicionar à descrição
-                clean_line = re.sub(r'^[-•*]\s*', '', line)
-                if clean_line and len(clean_line) > 5:
+                # Manter o bullet se existir, apenas limpar espaços extras
+                if line and len(line) > 5:
+                    # Se começa com bullet, formatar consistentemente
+                    if re.match(r'^[-•*]\s*', line):
+                        clean_line = re.sub(r'^[-•*]\s*', '- ', line)  # Padroniza para "- "
+                    else:
+                        clean_line = line
                     description_lines.append(clean_line)
         
         # Não esquecer da última experiência
         if current_exp and (current_exp.company or current_exp.role):
-            current_exp.description = ' '.join(description_lines)[:500]
+            current_exp.description = '\n'.join(description_lines)
             experiences.append(current_exp)
         
         return experiences[:10]
     
-    def _extract_education(self, text: str) -> List[str]:
-        """Extrai formação acadêmica."""
+    def _extract_education(self, text: str) -> List[EducationItem]:
+        """Extrai formação acadêmica com datas e instituições."""
+        from datetime import datetime
         education = []
         
         # Encontrar seção de formação
@@ -1223,35 +1236,204 @@ class ATSEngine:
         
         edu_text = text[edu_start:edu_end]
         
-        # Padrões de formação
-        patterns = [
-            r'((?:Bacharel|Tecnólogo|Licenciatura|Mestrado|Doutorado|MBA|Pós[-\s]?Graduação|Técnico|Ensino\s*Médio)[a-zÀ-ÿ\s]+em\s+[A-Za-zÀ-ÿ\s]+)',
-            r'([A-Za-zÀ-ÿ\s]+(?:Universidade|Faculdade|Instituto|UNISINOS|UFRGS|PUC|SENAC|SENAI|FATEC|IFRS)[A-Za-zÀ-ÿ\s]*)',
-            r'((?:Graduação|Curso\s*Superior|Curso\s*Técnico)[a-zÀ-ÿ\s]+)',
+        # Padrões de data
+        date_patterns = [
+            r'([A-Za-zÀ-ÿ]+\s*(?:de\s*)?\d{4})\s*(?:a|até|[-–])\s*([A-Za-zÀ-ÿ]+\s*(?:de\s*)?\d{4}|Atual|Presente|atual|presente|cursando)',
+            r'(\d{1,2}[/\.]\d{4})\s*(?:a|até|[-–])\s*(\d{1,2}[/\.]\d{4}|Atual|Presente|cursando)',
+            r'(\d{4})\s*(?:a|até|[-–])\s*(\d{4}|Atual|Presente|cursando)',
         ]
         
-        # Dividir por linhas
+        # Padrões de curso e instituição
+        course_patterns = [
+            r'(Bacharel(?:ado)?|Tecnólogo|Licenciatura|Mestrado|Doutorado|MBA|Pós[-\s]?Graduação|Técnico|Ensino\s*Médio|Superior)\s*(?:em|in)?\s*([A-Za-zÀ-ÿ\s]+)',
+            r'(Graduação|Curso\s*Superior|Curso\s*Técnico)\s*(?:em|in)?\s*([A-Za-zÀ-ÿ\s]+)',
+        ]
+        
+        institution_keywords = [
+            'universidade', 'faculdade', 'instituto', 'escola', 'centro',
+            'unisinos', 'ufrgs', 'puc', 'senac', 'senai', 'fatec', 'ifrs', 'ufsc'
+        ]
+        
+        # Processar linha por linha
         lines = edu_text.split('\n')
+        current_edu = None
+        current_year = datetime.now().year
+        
         for line in lines:
             line = line.strip()
-            if len(line) < 10:
+            if len(line) < 5:
                 continue
             
-            for pattern in patterns:
+            # Tentar detectar curso
+            course_found = None
+            for pattern in course_patterns:
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
-                    edu_item = match.group(1).strip()
-                    if edu_item and edu_item not in education:
-                        education.append(edu_item[:200])
+                    course_found = f"{match.group(1).strip()} {match.group(2).strip()}".strip()
                     break
-            else:
-                # Se não encontrou padrão específico, adicionar linha inteira
-                # se parece formação
-                if any(x in line.lower() for x in ['universidade', 'faculdade', 'curso', 'bacharel', 'técnico', 'graduação']):
-                    if line not in education:
-                        education.append(line[:200])
+            
+            if course_found:
+                # Salvar anterior se existe
+                if current_edu and current_edu.course:
+                    education.append(current_edu)
+                
+                current_edu = EducationItem(course=course_found)
+                
+                # Procurar datas na mesma linha
+                for date_pattern in date_patterns:
+                    date_match = re.search(date_pattern, line, re.IGNORECASE)
+                    if date_match:
+                        current_edu.start_date = date_match.group(1)
+                        current_edu.end_date = date_match.group(2)
+                        
+                        # Determinar status
+                        end_lower = date_match.group(2).lower()
+                        if any(x in end_lower for x in ['atual', 'presente', 'cursando']):
+                            current_edu.status = "cursando"
+                        else:
+                            # Extrair ano final
+                            year_match = re.search(r'\d{4}', date_match.group(2))
+                            if year_match:
+                                end_year = int(year_match.group())
+                                if end_year > current_year:
+                                    current_edu.status = "cursando"
+                                else:
+                                    current_edu.status = "concluído"
+                        
+                        if current_edu.start_date and current_edu.end_date:
+                            current_edu.period = f"{current_edu.start_date} - {current_edu.end_date}"
+                        break
+                
+                continue
+            
+            # Se temos edu ativa, procurar instituição
+            if current_edu:
+                line_lower = line.lower()
+                if any(kw in line_lower for kw in institution_keywords):
+                    # Limpar e extrair nome da instituição
+                    inst = re.sub(r'^[-•*]\s*', '', line)
+                    inst = re.sub(r'\d{4}.*$', '', inst)  # Remover datas
+                    if inst and len(inst) > 3:
+                        current_edu.institution = inst.strip()[:100]
+                
+                # Procurar datas se ainda não temos
+                if not current_edu.period:
+                    for date_pattern in date_patterns:
+                        date_match = re.search(date_pattern, line, re.IGNORECASE)
+                        if date_match:
+                            current_edu.start_date = date_match.group(1)
+                            current_edu.end_date = date_match.group(2)
+                            
+                            # Determinar status
+                            end_lower = date_match.group(2).lower()
+                            if any(x in end_lower for x in ['atual', 'presente', 'cursando']):
+                                current_edu.status = "cursando"
+                            else:
+                                year_match = re.search(r'\d{4}', date_match.group(2))
+                                if year_match:
+                                    end_year = int(year_match.group())
+                                    if end_year > current_year:
+                                        current_edu.status = "cursando"
+                                    else:
+                                        current_edu.status = "concluído"
+                            
+                            if current_edu.start_date and current_edu.end_date:
+                                current_edu.period = f"{current_edu.start_date} - {current_edu.end_date}"
+                            break
+        
+        # Salvar último item
+        if current_edu and current_edu.course:
+            education.append(current_edu)
         
         return education[:10]
+    
+    def _extract_skills_from_section(self, text: str) -> Tuple[List[str], Dict[str, List[str]]]:
+        """
+        Extrai habilidades da seção de habilidades do currículo.
+        Retorna (skills_flat, skills_by_category).
+        Detecta se há categorização no texto e preserva.
+        """
+        skills_flat = []
+        skills_by_category = {}
+        
+        # Padrões para encontrar seção de habilidades
+        skills_patterns = [
+            r'(?:habilidades?\s*(?:t[ée]cnicas?|e\s*idiomas?))[:\s]*\n',
+            r'(?:compet[êe]ncias?\s*t[ée]cnicas?)[:\s]*\n',
+            r'(?:conhecimentos?\s*t[ée]cnicos?)[:\s]*\n',
+            r'(?:tecnologias?|stack\s*t[ée]cnica?)[:\s]*\n',
+            r'(?:ferramentas?\s*e\s*tecnologias?)[:\s]*\n',
+        ]
+        
+        # Encontrar seção
+        skills_match = None
+        for pattern in skills_patterns:
+            skills_match = re.search(pattern, text, re.IGNORECASE)
+            if skills_match:
+                break
+        
+        if not skills_match:
+            return skills_flat, skills_by_category
+        
+        # Extrair texto da seção
+        skills_start = skills_match.end()
+        next_section = re.search(
+            r'\n{2,}(?:experi[êe]ncia|forma[çc][aã]o|educa[çc][aã]o|idiomas|certifica[çc][õo]es|cursos|projetos)',
+            text[skills_start:], re.IGNORECASE
+        )
+        skills_end = skills_start + next_section.start() if next_section else min(skills_start + 1500, len(text))
+        
+        skills_text = text[skills_start:skills_end]
+        
+        # Detectar se há categorias
+        # Padrão: "Cloud:", "DevOps:", "Programação:", etc.
+        category_pattern = r'^([A-Za-zÀ-ÿ\s/]+):\s*(.+)$'
+        
+        has_categories = False
+        lines = skills_text.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line or len(line) < 3:
+                continue
+            
+            # Tentar match de categoria
+            cat_match = re.match(category_pattern, line)
+            if cat_match:
+                has_categories = True
+                category_name = cat_match.group(1).strip()
+                skills_str = cat_match.group(2).strip()
+                
+                # Separar skills (pode ser vírgula, pipe, ponto-vírgula)
+                skills_in_cat = re.split(r'[,;|]', skills_str)
+                skills_in_cat = [s.strip() for s in skills_in_cat if s.strip() and len(s.strip()) > 1]
+                
+                if skills_in_cat:
+                    # Normalizar nome da categoria
+                    cat_key = unidecode(category_name.lower()).replace(' ', '_').replace('/', '_')
+                    skills_by_category[cat_key] = skills_in_cat
+                    skills_flat.extend(skills_in_cat)
+        
+        # Se não tem categorias, extrair como lista flat
+        if not has_categories:
+            for line in lines:
+                line = line.strip()
+                # Limpar bullets
+                line = re.sub(r'^[-•*]\s*', '', line)
+                if not line or len(line) < 2:
+                    continue
+                
+                # Separar por delimitadores
+                skills = re.split(r'[,;|]', line)
+                for skill in skills:
+                    skill = skill.strip()
+                    if skill and len(skill) > 1 and skill not in skills_flat:
+                        # Filtrar palavras não-técnicas
+                        if skill.lower() not in ['júnior', 'junior', 'pleno', 'sênior', 'senior', 
+                                                   'remoto', 'presencial', 'híbrido', 'hibrido']:
+                            skills_flat.append(skill)
+        
+        return skills_flat, skills_by_category
     
     def _categorize_skills(self, keywords: List[KeywordMatch]) -> Dict[str, List[str]]:
         """Categoriza habilidades encontradas."""

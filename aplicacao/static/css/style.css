@@ -751,6 +751,13 @@ body {
     margin-bottom: 0.25rem;
 }
 
+.experience-title {
+    font-size: 0.875rem;
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
 .exp-role {
     font-weight: 600;
     color: var(--color-text);
@@ -772,7 +779,8 @@ body {
 .exp-description {
     font-size: 0.8125rem;
     color: var(--color-text-secondary);
-    line-height: 1.5;
+    line-height: 1.6;
+    margin-top: 0.5rem;
 }
 
 .education-list,

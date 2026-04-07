@@ -14,35 +14,38 @@ Baseado em estudo de keywords para perfil de Infraestrutura/DevOps.
 # ALTA PRIORIDADE (Critical) - Keywords principais que definem o perfil
 KEYWORDS_CRITICAL = {
     # Sistemas Operacionais
-    "linux", "centos", "ubuntu", "rocky linux", "debian", "rhel",
+    "linux", "centos", "ubuntu", "rocky linux", "debian", "rhel", "mint",
     
     # Cloud AWS
-    "aws", "ec2", "s3", "glacier", "vpc",
+    "aws", "ec2", "s3", "glacier", "vpc", "cloudformation", "lambda", "rds",
     
     # Containers e Web Stack
     "docker", "nginx", "gunicorn", "supervisor", "apache",
     
     # Banco de Dados
-    "postgresql", "mysql",
+    "postgresql", "mysql", "mongodb", "redis", "mariadb",
     
     # Monitoramento
-    "zabbix", "prometheus", "grafana",
+    "zabbix", "prometheus", "grafana", "datadog", "nagios",
     
     # Scripting e Automação
-    "shell script", "bash", "automação", "python",
+    "shell script", "bash", "automação", "python", "powershell",
     
     # Versionamento
     "git", "bitbucket", "gitlab", "github",
     
     # Redes
-    "tcp/ip", "dns", "vpn", "openvpn", "firewall",
+    "tcp/ip", "dns", "vpn", "openvpn", "firewall", "load balancer",
     
     # Conceitos Core
     "troubleshooting", "migração", "observabilidade", "rca",
-    "sustentação", "infraestrutura",
+    "sustentação", "infraestrutura", "redução de incidentes",
     
     # IaC (se aplicável)
-    "terraform", "ansible", "kubernetes", "k8s",
+    "terraform", "ansible", "kubernetes", "k8s", "helm", "argocd",
+    
+    # DevOps
+    "ci/cd", "jenkins", "pipeline", "devops", "sre",
 }
 
 # MÉDIA PRIORIDADE (High) - Keywords secundárias importantes
@@ -50,37 +53,41 @@ KEYWORDS_HIGH = {
     # Ferramentas e conceitos secundários
     "logs", "tuning", "backup", "recovery", "restore",
     "documentação", "padronização", "disponibilidade",
-    "estabilidade", "crontab", "sla",
+    "estabilidade", "crontab", "sla", "checklists",
     
     # Ferramentas específicas
-    "rclone", "cups", "samba",
+    "rclone", "cups", "samba", "lpd", "smtp",
     
     # Redes secundárias
     "dhcp", "vlan", "traceroute", "gateway", "roteamento",
-    "latência", "conectividade",
+    "latência", "conectividade", "monitoramento de link",
     
     # Monitoramento secundário
-    "alertas", "dashboards", "monitoramento",
+    "alertas", "dashboards", "monitoramento", "triggers", "templates",
     
     # Cloud secundário
-    "cloudwatch", "iam", "route53",
+    "cloudwatch", "iam", "route53", "eks", "ecs",
     
     # Containers secundário
     "docker-compose", "dockerfile", "containerd",
+    
+    # Telecom
+    "telecom", "operação 24/7", "incidentes", "atendimento n2",
 }
 
 # BAIXA PRIORIDADE (Medium) - Keywords de contexto operacional
 KEYWORDS_MEDIUM = {
     # Contexto operacional
     "chamados", "incidentes", "tickets", "suporte",
-    "n2", "n3", "escalonamento",
+    "n1", "n2", "n3", "escalonamento", "triagem",
     
     # Ferramentas de suporte
-    "glpi", "acesso remoto", "anydesk", "teamviewer", "putty",
+    "glpi", "acesso remoto", "anydesk", "teamviewer", "putty", "dwservice",
     
     # Contexto de trabalho
-    "operação 24/7", "plantão", "on-call",
-    "tratativa de incidentes", "análise de causa",
+    "operação 24/7", "plantão", "on-call", "escala 24/7",
+    "tratativa de incidentes", "análise de causa", "diagnóstico de rede",
+    "pós-implantação", "implantação",
     
     # Sistemas secundários
     "windows", "windows server", "active directory",
@@ -120,6 +127,7 @@ SECTION_KEYWORDS = {
     ],
     "habilidades": [
         "habilidades técnicas", "habilidades tecnicas", "habilidades:",
+        "habilidades e idiomas", "habilidades/idiomas",
         "competências técnicas", "competencias tecnicas",
         "technical skills", "hard skills", "conhecimentos técnicos",
         "conhecimentos tecnicos", "tecnologias:", "skills:",

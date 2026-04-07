@@ -109,7 +109,17 @@ def result_to_dict(result: ATSAnalysisResult) -> dict:
                 }
                 for exp in ed.experiences
             ],
-            "education": ed.education,
+            "education": [
+                {
+                    "course": edu.course,
+                    "institution": edu.institution,
+                    "period": edu.period,
+                    "start_date": edu.start_date,
+                    "end_date": edu.end_date,
+                    "status": edu.status
+                }
+                for edu in ed.education
+            ],
             "skills": ed.skills,
             "skills_by_category": ed.skills_by_category,
             "languages": ed.languages,

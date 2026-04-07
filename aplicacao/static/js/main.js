@@ -557,13 +557,21 @@ function displayExtractedData(data) {
             <h4>💼 Experiência Profissional (${data.experiences.length} encontrada${data.experiences.length > 1 ? 's' : ''})</h4>
             <div class="experiences-list">`;
         data.experiences.forEach((exp, idx) => {
+            // Título em uma linha: Cargo | Empresa - data
+            let titleParts = [];
+            if (exp.role) titleParts.push(`<strong>${exp.role}</strong>`);
+            if (exp.company) titleParts.push(exp.company);
+            
+            let title = titleParts.join(' | ');
+            if (exp.period) title += ` - ${exp.period}`;
+            
             html += `<div class="experience-item">
-                <div class="experience-header">`;
-            if (exp.role) html += `<span class="exp-role">${exp.role}</span>`;
-            if (exp.company) html += `<span class="exp-company">@ ${exp.company}</span>`;
-            html += `</div>`;
-            if (exp.period) html += `<div class="exp-period">📅 ${exp.period}</div>`;
-            if (exp.description) html += `<div class="exp-description">${exp.description.substring(0, 200)}${exp.description.length > 200 ? '...' : ''}</div>`;
+                <div class="experience-title">${title}</div>`;
+            if (exp.description) {
+                // Preservar quebras de linha
+                const formattedDesc = exp.description.replace(/\n/g, '<br>');
+                html += `<div class="exp-description">${formattedDesc}</div>`;
+            }
             html += `</div>`;
         });
         html += `</div></div>`;
@@ -575,7 +583,20 @@ function displayExtractedData(data) {
             <h4>🎓 Formação Acadêmica</h4>
             <div class="education-list">`;
         data.education.forEach(edu => {
-            html += `<div class="education-item">📚 ${edu}</div>`;
+            if (typeof edu === 'string') {
+                // Retrocompatibilidade
+                html += `<div class="education-item">📚 ${edu}</div>`;
+            } else {
+                // Novo formato estruturado
+                let eduText = `<strong>${edu.course}</strong>`;
+                if (edu.institution) eduText += ` - ${edu.institution}`;
+                if (edu.period) {
+                    eduText += ` (${edu.period})`;
+                } else if (edu.status === 'cursando') {
+                    eduText += ` (Cursando)`;
+                }
+                html += `<div class="education-item">📚 ${eduText}</div>`;
+            }
         });
         html += `</div></div>`;
     }
