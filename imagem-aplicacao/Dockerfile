@@ -1,29 +1,8 @@
 # =============================================================================
 # Dockerfile - Leitura ATS Currículo
 # =============================================================================
-# Imagem multi-stage otimizada para Kubernetes
 # Build: docker build -t leitura-ats:v1.0.0 -f imagem-aplicacao/Dockerfile .
 
-# -----------------------------------------------------------------------------
-# Stage 1: Builder - Compilar dependências
-# -----------------------------------------------------------------------------
-FROM python:3.12-slim as builder
-
-WORKDIR /build
-
-# Instalar dependências de compilação
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar requirements e criar wheels
-COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements.txt
-
-# -----------------------------------------------------------------------------
-# Stage 2: Runtime - Imagem final
-# -----------------------------------------------------------------------------
 FROM python:3.12-slim
 
 # Labels para metadata
@@ -43,15 +22,14 @@ WORKDIR $APP_HOME
 RUN groupadd --gid 1000 appgroup \
     && useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
 
-# Instalar dependências de runtime
+# Instalar dependências de sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar e instalar wheels compilados
-COPY --from=builder /build/wheels /wheels
-RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/* \
-    && rm -rf /wheels
+# Copiar e instalar dependências Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Baixar dados NLTK
 RUN python -c "import nltk; \
