@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análise ATS - Legibilidade de Currículo</title>
+    <title>Análise ATS de Currículo Técnico</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -12,7 +12,7 @@
         <header class="header">
             <div class="header-content">
                 <h1>ATS Analyzer</h1>
-                <p>Análise de legibilidade para sistemas de triagem automatizada</p>
+                <p>Leitura heurística de currículos técnicos para triagem automatizada</p>
             </div>
         </header>
 
@@ -26,11 +26,11 @@
                             <polyline points="17 8 12 3 7 8"/>
                             <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
-                        <h2>Envie seu currículo</h2>
+                        <h2>Envie seu currículo técnico</h2>
                         <p>Arraste o arquivo ou clique para selecionar</p>
                         <input type="file" id="fileInput" accept=".pdf" hidden>
                         <button class="btn btn-primary" id="selectFileBtn">Selecionar PDF</button>
-                        <span class="upload-hint">Formato PDF • Máximo 16MB</span>
+                        <span class="upload-hint">Formato PDF • Máximo 16MB • Foco em TI</span>
                     </div>
                     
                     <!-- File Preview -->
@@ -54,7 +54,7 @@
                     </div>
                     
                     <button class="btn btn-success hidden" id="analyzeBtn">
-                        Analisar Currículo
+                        Analisar Currículo Técnico
                     </button>
                 </div>
             </section>
@@ -164,8 +164,8 @@
 
                     <!-- Extracted Data Section -->
                     <div class="result-card result-card-full" id="tab-extracted">
-                        <h3>Dados Extraídos pelo ATS</h3>
-                        <p class="card-description">O que sistemas automatizados conseguem ler do seu currículo:</p>
+                        <h3>Dados Extraídos</h3>
+                        <p class="card-description">O que a leitura automatizada consegue identificar em um currículo técnico:</p>
                         <div class="extracted-data-content" id="extractedDataContent">
                             <p class="no-data">Processando...</p>
                         </div>
@@ -188,7 +188,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Análise heurística de legibilidade ATS • Projeto de Portfólio</p>
+            <p>Análise heurística de currículos técnicos • Projeto de Portfólio</p>
         </footer>
     </div>
 

@@ -1,6 +1,6 @@
 # 🏗️ Arquitetura Atual
 
-Documentação da arquitetura real implementada no projeto.
+Documentação da arquitetura do projeto de análise heurística de currículos técnicos em PDF, voltado para a área de TI.
 
 ---
 
@@ -71,7 +71,7 @@ Documentação da arquitetura real implementada no projeto.
 
 **Pipeline de Análise:**
 ```
-PDF → Extração (PyMuPDF) → Texto → NLP (NLTK) → Scoring → JSON
+Currículo técnico (PDF) → Extração (PyMuPDF) → Texto → NLP (NLTK) → Scoring heurístico → JSON
 ```
 
 ### 4. Logs
@@ -114,11 +114,11 @@ analise_20260405_143052.txt
    - Stemming com RSLPStemmer (português)
    - Identificação de seções
    - Extração de entidades (nome, empresas, datas)
-5. **Scoring:** Cálculo do score ATS
+5. **Scoring:** Cálculo do score heurístico
    - Keywords: 40% (palavras-chave técnicas encontradas)
    - Estrutura: 35% (seções identificadas)
    - Legibilidade: 25% (clareza do texto)
-6. **Resposta:** JSON com análise completa
+6. **Resposta:** JSON com análise completa do currículo técnico
 
 ---
 

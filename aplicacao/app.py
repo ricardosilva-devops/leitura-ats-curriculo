@@ -1,8 +1,8 @@
 """
-Aplicação Flask - Leitura ATS de Currículos
+Aplicação Flask - Leitura ATS de Currículos Técnicos
 
-Plataforma web para análise de currículos em PDF,
-identificando palavras-chave e verificando compatibilidade ATS.
+Plataforma web para análise heurística de currículos técnicos em PDF,
+identificando palavras-chave da área de TI e verificando estrutura para legibilidade automatizada.
 """
 
 import os

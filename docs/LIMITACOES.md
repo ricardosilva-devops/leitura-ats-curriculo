@@ -2,6 +2,8 @@
 
 Lista de limitações atuais do projeto e possíveis soluções futuras.
 
+> **Escopo:** Este projeto foi desenhado para análise heurística de currículos técnicos da área de TI. O dicionário de palavras-chave e as regras de estrutura são otimizados para esse contexto.
+
 ---
 
 ## Processamento de PDF
@@ -67,13 +69,13 @@ Lista de limitações atuais do projeto e possíveis soluções futuras.
 
 ---
 
-### 5. Dicionário de Keywords Limitado
+### 5. Dicionário de Keywords Técnicas
 
-**Limitação:** ~200 keywords técnicas mapeadas, focadas em TI.
+**Limitação:** ~200 keywords técnicas mapeadas, focadas em TI (infraestrutura, DevOps, desenvolvimento).
 
-**Impacto:** Áreas fora de TI terão análise menos precisa.
+**Impacto:** Currículos de áreas fora de TI não terão análise adequada. Este é um recorte de escopo, não uma limitação técnica.
 
-**Solução futura:** Expandir dicionário ou permitir upload de vaga para comparação.
+**Solução futura:** Permitir upload de vaga para comparação dinâmica de keywords.
 
 ---
 
@@ -193,10 +195,11 @@ Lista de limitações atuais do projeto e possíveis soluções futuras.
 
 ## Por que Essas Limitações São Aceitáveis?
 
-1. **Escopo do projeto:** Demonstração de infraestrutura, não produto completo
-2. **Foco:** Python, Docker, Terraform, Kubernetes - não features de produto
-3. **Evolução planejada:** Roadmap documenta como endereçar cada limitação
-4. **Transparência:** Documentar limitações é melhor que escondê-las
+1. **Escopo do projeto:** Análise heurística de currículos técnicos, não produto genérico
+2. **Foco:** Demonstrar empacotamento e operação de aplicação Python containerizada
+3. **Recorte intencional:** Área de TI como público-alvo, não todas as profissões
+4. **Evolução planejada:** Roadmap documenta como endereçar cada limitação
+5. **Transparência:** Documentar limitações é melhor que escondê-las
 
 ---
 

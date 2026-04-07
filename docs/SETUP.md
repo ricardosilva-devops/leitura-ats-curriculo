@@ -1,5 +1,7 @@
 # 🔧 Manual de Instalação
 
+Projeto de análise heurística de currículos técnicos em PDF, com foco em palavras-chave e estrutura para a área de TI.
+
 > **Ambiente:** Linux ou WSL (Windows Subsystem for Linux).  
 > Os scripts usam bash. Em Windows nativo, siga a instalação manual.
 

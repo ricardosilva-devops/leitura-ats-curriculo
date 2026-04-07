@@ -140,7 +140,7 @@ Justificativas das escolhas tecnológicas do projeto.
 | Dados necessários | Nenhum | Milhares de exemplos |
 | Interpretabilidade | Alta | Baixa |
 | Manutenção | Simples | Complexa |
-| Precisão | Boa (para o propósito) | Potencialmente melhor |
+| Precisão | Boa (para currículos técnicos) | Potencialmente melhor |
 | Complexidade | Baixa | Alta |
 
 **Decisão:** Análise heurística com NLP básico
@@ -148,8 +148,18 @@ Justificativas das escolhas tecnológicas do projeto.
 **Motivo:** 
 1. Não temos dataset de currículos para treinar
 2. Regras são interpretáveis (podemos explicar o score)
-3. Suficiente para demonstrar conceito
+3. Suficiente para demonstrar conceito em currículos técnicos
 4. ML seria over-engineering sem benefício claro
+
+### Por que foco em currículos técnicos?
+
+**Decisão:** Dicionário de keywords e regras de estrutura otimizados para área de TI.
+
+**Motivo:**
+1. Escopo definido é mais fácil de manter e validar
+2. Keywords técnicas são bem estabelecidas (Linux, AWS, Docker, etc.)
+3. Estrutura de currículos de TI segue padrões reconhecíveis
+4. Projeto de portfólio voltado para a área de atuação do autor
 
 ---
 

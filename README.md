@@ -1,6 +1,6 @@
-# 📄 Leitura ATS - Analisador de Currículos
+# 📄 Leitura ATS - Analisador de Currículos Técnicos
 
-Aplicação web para análise de legibilidade de currículos em PDF, simulando como sistemas ATS (Applicant Tracking System) interpretam documentos.
+Aplicação web para análise heurística de currículos técnicos em PDF, com foco em legibilidade para leitura automatizada na área de TI.
 
 > **Projeto de Portfólio** — Aplicação Python containerizada com operação documentada e CI básico.
 
@@ -28,12 +28,12 @@ Aplicação web para análise de legibilidade de currículos em PDF, simulando c
 
 ## 🎯 O que faz?
 
-1. **Upload de PDF** — Arraste ou selecione um currículo
-2. **Análise** — Score heurístico (0-100) baseado em keywords, estrutura e legibilidade
-3. **Extração** — Nome, experiências, habilidades, certificações
-4. **Feedback** — Sugestões para melhorar a estrutura
+1. **Upload de currículo técnico em PDF** — Arraste ou selecione um currículo da área de TI
+2. **Análise heurística** — Score (0-100) baseado em keywords técnicas, estrutura e legibilidade
+3. **Extração de dados** — Nome, experiências, habilidades técnicas, certificações
+4. **Feedback** — Sugestões para melhorar a estrutura e legibilidade para sistemas automatizados
 
-⚠️ Análise heurística para fins educacionais. Não é validação oficial de ATS.
+⚠️ Análise heurística para fins educacionais, voltada a currículos técnicos. Não é validação oficial de ATS.
 
 ---
 
@@ -130,6 +130,7 @@ Ver estrutura completa: [exemplos/resposta_exemplo.json](exemplos/resposta_exemp
 - PDF deve ter texto selecionável (sem OCR)
 - Apenas formato PDF
 - Otimizado para português
+- Foco em currículos técnicos da área de TI (dicionário de keywords técnicas)
 
 ---
 

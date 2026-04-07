@@ -1,6 +1,6 @@
-# Currículo de Exemplo
+# Currículo Técnico de Exemplo
 
-Este é um currículo **fictício** para demonstração da aplicação.
+Este é um currículo técnico **fictício** para demonstração da aplicação.
 
 ⚠️ **ATENÇÃO:** Este arquivo é apenas para testes. Não contém dados reais.
 
@@ -10,7 +10,7 @@ Este é um currículo **fictício** para demonstração da aplicação.
 
 1. Converter este markdown para PDF
 2. Ou usar o arquivo `curriculo_exemplo.pdf` já convertido
-3. Upload na aplicação para testar a análise ATS
+3. Upload na aplicação para testar a análise de currículo técnico
 
 ---
 
