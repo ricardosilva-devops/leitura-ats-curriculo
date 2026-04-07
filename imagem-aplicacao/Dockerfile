@@ -14,7 +14,9 @@ LABEL maintainer="ricardo-silva-jr" \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP_HOME=/app \
-    FLASK_ENV=production
+    FLASK_ENV=production \
+    NLTK_DATA=/app/nltk_data \
+    GUNICORN_WORKERS=2
 
 WORKDIR $APP_HOME
 
@@ -31,18 +33,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Baixar dados NLTK
-RUN python -c "import nltk; \
-    nltk.download('punkt', quiet=True); \
-    nltk.download('punkt_tab', quiet=True); \
-    nltk.download('rslp', quiet=True)"
+# Baixar dados NLTK para diretório acessível
+RUN mkdir -p /app/nltk_data && python -c "import nltk; \
+    nltk.download('punkt', download_dir='/app/nltk_data', quiet=True); \
+    nltk.download('punkt_tab', download_dir='/app/nltk_data', quiet=True); \
+    nltk.download('rslp', download_dir='/app/nltk_data', quiet=True)"
 
 # Copiar código da aplicação
 COPY aplicacao/ $APP_HOME/
 
-# Criar diretórios para logs
+# Criar diretórios para logs e ajustar permissões
 RUN mkdir -p $APP_HOME/logs \
-    && chown -R appuser:appgroup $APP_HOME
+    && chown -R appuser:appgroup $APP_HOME \
+    && chown -R appuser:appgroup /app/nltk_data
 
 # Trocar para usuário não-privilegiado
 USER appuser
