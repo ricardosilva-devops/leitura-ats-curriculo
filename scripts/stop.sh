@@ -1,17 +1,43 @@
 #!/bin/bash
 # =============================================================================
-# stop.sh - Parar a aplicação
+# stop.sh - Parar a aplicacao
 # =============================================================================
 # Uso: ./scripts/stop.sh
+# =============================================================================
 
 set -e
 
-# Cores
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# -----------------------------------------------------------------------------
+# Configuracoes
+# -----------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+PORT=${FLASK_PORT:-5000}
 
-echo "🛑 Parando aplicação..."
+cd "$PROJECT_DIR"
+
+# -----------------------------------------------------------------------------
+# Funcoes
+# -----------------------------------------------------------------------------
+log_info() {
+    echo "[INFO] $1"
+}
+
+log_ok() {
+    echo "[OK]   $1"
+}
+
+log_warn() {
+    echo "[WARN] $1"
+}
+
+# -----------------------------------------------------------------------------
+# Execucao
+# -----------------------------------------------------------------------------
+echo "============================================================================="
+echo "PARANDO APLICACAO"
+echo "============================================================================="
+echo ""
 
 # Verificar se existe arquivo PID
 if [ -f "app.pid" ]; then
@@ -19,27 +45,29 @@ if [ -f "app.pid" ]; then
     if kill -0 $PID 2>/dev/null; then
         kill $PID
         rm app.pid
-        echo -e "  ${GREEN}✓${NC} Processo $PID finalizado"
+        log_ok "Processo $PID finalizado"
     else
         rm app.pid
-        echo -e "  ${YELLOW}⚠${NC} Processo $PID não encontrado (já parado?)"
+        log_warn "Processo $PID nao encontrado (ja parado?)"
     fi
 else
     # Tentar encontrar processo gunicorn
-    PIDS=$(pgrep -f "gunicorn.*wsgi:app" 2>/dev/null || true)
+    PIDS=$(pgrep -f "gunicorn.*wsgi:application" 2>/dev/null || true)
     if [ -n "$PIDS" ]; then
-        echo "  Encontrados processos: $PIDS"
+        log_info "Processos encontrados: $PIDS"
         kill $PIDS 2>/dev/null || true
-        echo -e "  ${GREEN}✓${NC} Processos finalizados"
+        log_ok "Processos finalizados"
     else
-        echo -e "  ${YELLOW}⚠${NC} Nenhum processo encontrado"
+        log_warn "Nenhum processo encontrado"
     fi
 fi
 
-# Verificar porta 5000
-if lsof -i :5000 &>/dev/null; then
-    echo -e "  ${YELLOW}⚠${NC} Porta 5000 ainda em uso. Verificar:"
-    lsof -i :5000 | head -3
+# Verificar porta
+if lsof -i :$PORT &>/dev/null; then
+    log_warn "Porta $PORT ainda em uso:"
+    lsof -i :$PORT | head -3
 else
-    echo -e "  ${GREEN}✓${NC} Porta 5000 liberada"
+    log_ok "Porta $PORT liberada"
 fi
+
+echo ""

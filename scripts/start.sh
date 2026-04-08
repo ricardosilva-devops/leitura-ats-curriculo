@@ -1,59 +1,96 @@
 #!/bin/bash
 # =============================================================================
-# start.sh - Iniciar a aplicação
+# start.sh - Iniciar a aplicacao
 # =============================================================================
-# Uso: ./scripts/start.sh [dev|prod]
+# Uso: ./scripts/start.sh [dev|prod|bg]
+# =============================================================================
 
 set -e
 
+# -----------------------------------------------------------------------------
+# Configuracoes
+# -----------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 MODE=${1:-dev}
 PORT=${FLASK_PORT:-5000}
 
-# Cores
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+cd "$PROJECT_DIR"
 
-# Ativar venv se não estiver ativo
-if [[ "$VIRTUAL_ENV" == "" ]]; then
-    source venv/bin/activate
-fi
+# -----------------------------------------------------------------------------
+# Funcoes
+# -----------------------------------------------------------------------------
+log_info() {
+    echo "[INFO] $1"
+}
 
+log_ok() {
+    echo "[OK]   $1"
+}
+
+log_warn() {
+    echo "[WARN] $1"
+}
+
+activate_venv() {
+    if [[ "$VIRTUAL_ENV" == "" ]]; then
+        if [ -f "venv/bin/activate" ]; then
+            source venv/bin/activate
+        else
+            echo "[ERROR] Ambiente virtual nao encontrado. Execute ./scripts/setup.sh primeiro."
+            exit 1
+        fi
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Execucao
+# -----------------------------------------------------------------------------
+activate_venv
 cd aplicacao
 
 case $MODE in
     dev)
-        echo -e "${GREEN}🚀 Iniciando em modo DESENVOLVIMENTO...${NC}"
-        echo "   URL: http://localhost:$PORT"
-        echo "   Debug: Ativado (auto-reload)"
+        echo "============================================================================="
+        echo "INICIANDO - Modo Desenvolvimento"
+        echo "============================================================================="
+        echo ""
+        log_info "URL: http://localhost:$PORT"
+        log_info "Debug: Ativado (auto-reload)"
         echo ""
         python3 app.py
         ;;
     prod)
-        echo -e "${GREEN}🚀 Iniciando em modo PRODUÇÃO (Gunicorn)...${NC}"
-        echo "   URL: http://localhost:$PORT"
+        echo "============================================================================="
+        echo "INICIANDO - Modo Producao (Gunicorn)"
+        echo "============================================================================="
         echo ""
-        gunicorn --config gunicorn_config.py wsgi:app
+        log_info "URL: http://localhost:$PORT"
+        echo ""
+        gunicorn --config gunicorn_config.py wsgi:application
         ;;
     bg|background)
-        echo -e "${GREEN}🚀 Iniciando em BACKGROUND...${NC}"
-        nohup gunicorn --config gunicorn_config.py wsgi:app > ../logs/gunicorn.log 2>&1 &
+        echo "============================================================================="
+        echo "INICIANDO - Modo Background"
+        echo "============================================================================="
+        echo ""
+        nohup gunicorn --config gunicorn_config.py wsgi:application > ../logs/gunicorn.log 2>&1 &
         PID=$!
         echo $PID > ../app.pid
-        echo "   PID: $PID"
-        echo "   Log: logs/gunicorn.log"
+        log_info "PID: $PID"
+        log_info "Log: logs/gunicorn.log"
         sleep 2
         if curl -s http://localhost:$PORT/health > /dev/null; then
-            echo -e "   ${GREEN}✓${NC} Aplicação iniciada com sucesso!"
+            log_ok "Aplicacao iniciada com sucesso"
         else
-            echo -e "   ${YELLOW}⚠${NC} Verificar logs: tail -f logs/gunicorn.log"
+            log_warn "Verificar logs: tail -f logs/gunicorn.log"
         fi
         ;;
     *)
         echo "Uso: ./scripts/start.sh [dev|prod|bg]"
         echo ""
         echo "Modos:"
-        echo "  dev  - Flask development server (padrão)"
+        echo "  dev  - Flask development server (padrao)"
         echo "  prod - Gunicorn production server"
         echo "  bg   - Gunicorn em background"
         exit 1

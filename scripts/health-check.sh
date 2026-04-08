@@ -1,52 +1,80 @@
 #!/bin/bash
 # =============================================================================
-# health-check.sh - Verificar saúde da aplicação
+# health-check.sh - Verificar saude da aplicacao
 # =============================================================================
 # Uso: ./scripts/health-check.sh [url]
+# =============================================================================
 
+# -----------------------------------------------------------------------------
+# Configuracoes
+# -----------------------------------------------------------------------------
 URL=${1:-http://localhost:5000}
 
-# Cores
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# -----------------------------------------------------------------------------
+# Funcoes
+# -----------------------------------------------------------------------------
+log_ok() {
+    echo "[OK]   $1"
+}
 
-echo "🏥 Health Check - Leitura ATS"
-echo "   URL: $URL"
+log_fail() {
+    echo "[FAIL] $1"
+}
+
+log_info() {
+    echo "[INFO] $1"
+}
+
+# -----------------------------------------------------------------------------
+# Execucao
+# -----------------------------------------------------------------------------
+echo "============================================================================="
+echo "HEALTH CHECK - Leitura ATS"
+echo "============================================================================="
+echo ""
+log_info "URL: $URL"
 echo ""
 
+ERRORS=0
+
 # Health endpoint
-echo -n "  /health: "
+echo -n "Verificando /health ... "
 RESPONSE=$(curl -s -w "\n%{http_code}" $URL/health 2>/dev/null)
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | head -1)
 
 if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}✓ OK${NC} ($BODY)"
+    log_ok "/health retornou 200 ($BODY)"
 else
-    echo -e "${RED}✗ FALHOU${NC} (HTTP $HTTP_CODE)"
-    exit 1
+    log_fail "/health retornou HTTP $HTTP_CODE"
+    ERRORS=$((ERRORS + 1))
 fi
 
-# Página principal
-echo -n "  /       : "
+# Pagina principal
+echo -n "Verificando /       ... "
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $URL/ 2>/dev/null)
 if [ "$HTTP_CODE" = "200" ]; then
-    echo -e "${GREEN}✓ OK${NC}"
+    log_ok "/ retornou 200"
 else
-    echo -e "${RED}✗ FALHOU${NC} (HTTP $HTTP_CODE)"
-    exit 1
+    log_fail "/ retornou HTTP $HTTP_CODE"
+    ERRORS=$((ERRORS + 1))
 fi
 
-# Verificar se aceita uploads
-echo -n "  /analyze: "
+# Endpoint de analise
+echo -n "Verificando /analyze ... "
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST $URL/analyze 2>/dev/null)
 if [ "$HTTP_CODE" = "400" ] || [ "$HTTP_CODE" = "415" ]; then
-    echo -e "${GREEN}✓ OK${NC} (endpoint ativo, aguardando arquivo)"
+    log_ok "/analyze endpoint ativo (aguardando arquivo)"
 else
-    echo -e "${YELLOW}? HTTP $HTTP_CODE${NC}"
+    log_info "/analyze retornou HTTP $HTTP_CODE"
 fi
 
 echo ""
-echo -e "${GREEN}✅ Aplicação saudável!${NC}"
+echo "============================================================================="
+if [ $ERRORS -eq 0 ]; then
+    echo "RESULTADO: Aplicacao saudavel"
+    exit 0
+else
+    echo "RESULTADO: $ERRORS erro(s) encontrado(s)"
+    exit 1
+fi
